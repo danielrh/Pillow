@@ -526,7 +526,7 @@ class pil_build_ext(build_ext):
         #
         # core library
 
-        files = ["_imaging.c"]
+        files = ["_imaging.c", "memmgr.c"]
         for src_file in _IMAGING:
             files.append(src_file + ".c")
         for src_file in _LIB_IMAGING:
