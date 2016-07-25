@@ -21,7 +21,7 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
-
+#include "../memmgr.h"
 #include "QuantHeap.h"
 
 struct _Heap {
