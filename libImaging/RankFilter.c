@@ -15,7 +15,7 @@
 #include "Imaging.h"
 
 /* Fast rank algorithm (due to Wirth), based on public domain code
-   by Nicolas Devillard, available at http://ndevilla.free.fr */
+   by Nicolas Devillard, available at http://ndevilla.memmgr_free.fr */
 
 #define SWAP(type,a,b) { register type t=(a);(a)=(b);(b)=t; }
 
@@ -60,7 +60,7 @@ ImagingRankFilter(Imaging im, int size, int rank)
     if (!(size & 1))
         return (Imaging) ImagingError_ValueError("bad filter size");
     
-    /* malloc check ok, for overflow in the define below */
+    /* memmgr_alloc check ok, for overflow in the define below */
     if (size > INT_MAX / size ||
         size > INT_MAX / (size * sizeof(FLOAT32))) {
         return (Imaging) ImagingError_ValueError("filter size too large");
@@ -76,9 +76,9 @@ ImagingRankFilter(Imaging im, int size, int rank)
     if (!imOut)
         return NULL;
 
-    /* malloc check ok, checked above */
+    /* memmgr_alloc check ok, checked above */
 #define RANK_BODY(type) do {\
-    type* buf = malloc(size2 * sizeof(type));\
+    type* buf = memmgr_alloc(size2 * sizeof(type));\
     if (!buf)\
         goto nomemory;\
     for (y = 0; y < imOut->ysize; y++)\
@@ -88,7 +88,7 @@ ImagingRankFilter(Imaging im, int size, int rank)
                        size * sizeof(type));\
             IMAGING_PIXEL_##type(imOut, x, y) = Rank##type(buf, size2, rank);\
         }\
-    free(buf); \
+    memmgr_free(buf); \
 } while (0)
 
     if (im->image8)

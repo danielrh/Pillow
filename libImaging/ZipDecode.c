@@ -56,17 +56,17 @@ ImagingZipDecode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
         if (context->mode == ZIP_PNG || context->mode == ZIP_PNG_PALETTE)
             context->prefix = 1; /* PNG */
 
-        /* overflow check for malloc */
+        /* overflow check for memmgr_alloc */
         if (state->bytes > INT_MAX - 1) {
             state->errcode = IMAGING_CODEC_MEMORY;
             return -1;
         }
         /* Expand standard buffer to make room for the (optional) filter
            prefix, and allocate a buffer to hold the previous line */
-        free(state->buffer);
-        /* malloc check ok, overflow checked above */
-        state->buffer = (UINT8*) malloc(state->bytes+1);
-        context->previous = (UINT8*) malloc(state->bytes+1);
+        memmgr_free(state->buffer);
+        /* memmgr_alloc check ok, overflow checked above */
+        state->buffer = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->previous = (UINT8*) memmgr_alloc(state->bytes+1);
         if (!state->buffer || !context->previous) {
             state->errcode = IMAGING_CODEC_MEMORY;
             return -1;
@@ -125,7 +125,7 @@ ImagingZipDecode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
                 state->errcode = IMAGING_CODEC_MEMORY;
             else
                 state->errcode = IMAGING_CODEC_CONFIG;
-            free(context->previous);
+            memmgr_free(context->previous);
             inflateEnd(&context->z_stream);
             return -1;
         }
@@ -190,7 +190,7 @@ ImagingZipDecode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
                 break;
             default:
                 state->errcode = IMAGING_CODEC_UNKNOWN;
-                free(context->previous);
+                memmgr_free(context->previous);
                 inflateEnd(&context->z_stream);
                 return -1;
             }
@@ -257,7 +257,7 @@ ImagingZipDecode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
             /* if (state->y < state->ysize || err != Z_STREAM_END)
                 state->errcode = IMAGING_CODEC_BROKEN; */
 
-            free(context->previous);
+            memmgr_free(context->previous);
             inflateEnd(&context->z_stream);
             return -1; /* end of file (errcode=0) */
 

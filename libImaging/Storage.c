@@ -52,7 +52,7 @@ ImagingNewPrologueSubtype(const char *mode, int xsize, int ysize,
     Imaging im;
     ImagingSectionCookie cookie;
 
-    im = (Imaging) calloc(1, size);
+    im = (Imaging) memmgr_calloc(1, size);
     if (!im)
         return (Imaging) ImagingError_MemoryError();
 
@@ -205,7 +205,7 @@ ImagingNewPrologueSubtype(const char *mode, int xsize, int ysize,
         im->linesize = xsize * 4;
 
     } else {
-        free(im);
+        memmgr_free(im);
         return (Imaging) ImagingError_ValueError("unrecognized mode");
     }
 
@@ -215,13 +215,13 @@ ImagingNewPrologueSubtype(const char *mode, int xsize, int ysize,
     ImagingSectionEnter(&cookie);
 
     /* Pointer array (allocate at least one line, to avoid MemoryError
-       exceptions on platforms where calloc(0, x) returns NULL) */
-    im->image = (char **) calloc((ysize > 0) ? ysize : 1, sizeof(void *));
+       exceptions on platforms where memmgr_calloc(0, x) returns NULL) */
+    im->image = (char **) memmgr_calloc((ysize > 0) ? ysize : 1, sizeof(void *));
 
     ImagingSectionLeave(&cookie);
 
     if (!im->image) {
-        free(im);
+        memmgr_free(im);
         return (Imaging) ImagingError_MemoryError();
     }
 
@@ -273,9 +273,9 @@ ImagingDelete(Imaging im)
         im->destroy(im);
 
     if (im->image)
-        free(im->image);
+        memmgr_free(im->image);
 
-    free(im);
+    memmgr_free(im);
 }
 
 
@@ -291,7 +291,7 @@ ImagingDestroyArray(Imaging im)
     if (im->image)
         for (y = 0; y < im->ysize; y++)
             if (im->image[y])
-                free(im->image[y]);
+                memmgr_free(im->image[y]);
 }
 
 Imaging
@@ -311,8 +311,8 @@ ImagingNewArray(const char *mode, int xsize, int ysize)
 
     /* Allocate image as an array of lines */
     for (y = 0; y < im->ysize; y++) {
-        /* malloc check linesize checked in prologue */
-        p = (char *) calloc(1, im->linesize);
+        /* memmgr_alloc check linesize checked in prologue */
+        p = (char *) memmgr_calloc(1, im->linesize);
         if (!p) {
             ImagingDestroyArray(im);
             break;
@@ -337,7 +337,7 @@ static void
 ImagingDestroyBlock(Imaging im)
 {
     if (im->block)
-        free(im->block);
+        memmgr_free(im->block);
 }
 
 Imaging
@@ -361,13 +361,13 @@ ImagingNewBlock(const char *mode, int xsize, int ysize)
     }
 
     if (im->ysize * im->linesize <= 0) {
-        /* some platforms return NULL for malloc(0); this fix
+        /* some platforms return NULL for memmgr_alloc(0); this fix
            prevents MemoryError on zero-sized images on such
            platforms */
-        im->block = (char *) malloc(1);
+        im->block = (char *) memmgr_alloc(1);
     } else {
-        /* malloc check ok, overflow check above */
-        im->block = (char *) calloc(im->ysize, im->linesize);
+        /* memmgr_alloc check ok, overflow check above */
+        im->block = (char *) memmgr_calloc(im->ysize, im->linesize);
     }
 
     if (im->block) {

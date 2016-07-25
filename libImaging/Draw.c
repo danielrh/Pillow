@@ -434,8 +434,8 @@ polygon_generic(Imaging im, int n, Edge *e, int ink, int eofill,
     }
 
     /* Initialize the edge table and find polygon boundaries */
-    /* malloc check ok, using calloc */
-    edge_table = calloc(n, sizeof(Edge*));
+    /* memmgr_alloc check ok, using memmgr_calloc */
+    edge_table = memmgr_calloc(n, sizeof(Edge*));
     if (!edge_table) {
         return -1;
     }
@@ -463,10 +463,10 @@ polygon_generic(Imaging im, int n, Edge *e, int ink, int eofill,
     }
 
     /* Process the edge table with a scan line searching for intersections */
-    /* malloc check ok, using calloc */
-    xx = calloc(edge_count * 2, sizeof(float));
+    /* memmgr_alloc check ok, using memmgr_calloc */
+    xx = memmgr_calloc(edge_count * 2, sizeof(float));
     if (!xx) {
-        free(edge_table);
+        memmgr_free(edge_table);
         return -1;
     }
     for (; ymin <= ymax; ymin++) {
@@ -488,8 +488,8 @@ polygon_generic(Imaging im, int n, Edge *e, int ink, int eofill,
         }
     }
 
-    free(xx);
-    free(edge_table);
+    memmgr_free(xx);
+    memmgr_free(edge_table);
     return 0;
 }
 
@@ -702,8 +702,8 @@ ImagingDrawPolygon(Imaging im, int count, int* xy, const void* ink_,
     if (fill) {
 
         /* Build edge list */
-        /* malloc check ok, using calloc */
-        Edge* e = calloc(count, sizeof(Edge));
+        /* memmgr_alloc check ok, using memmgr_calloc */
+        Edge* e = memmgr_calloc(count, sizeof(Edge));
         if (!e) {
             (void) ImagingError_MemoryError();
             return -1;
@@ -713,7 +713,7 @@ ImagingDrawPolygon(Imaging im, int count, int* xy, const void* ink_,
         if (xy[i+i] != xy[0] || xy[i+i+1] != xy[1])
             add_edge(&e[n++], xy[i+i], xy[i+i+1], xy[0], xy[1]);
         draw->polygon(im, n, e, ink, 0);
-        free(e);
+        memmgr_free(e);
 
     } else {
 
@@ -780,8 +780,8 @@ ellipse(Imaging im, int x0, int y0, int x1, int y1,
     if (mode != ARC && fill) {
 
         /* Build edge list */
-        /* malloc check UNDONE, FLOAT? */
-        Edge* e = calloc((end - start + 3), sizeof(Edge));
+        /* memmgr_alloc check UNDONE, FLOAT? */
+        Edge* e = memmgr_calloc((end - start + 3), sizeof(Edge));
         if (!e) {
             ImagingError_MemoryError();
             return -1;
@@ -816,7 +816,7 @@ ellipse(Imaging im, int x0, int y0, int x1, int y1,
             draw->polygon(im, n, e, ink, 0);
         }
 
-        free(e);
+        memmgr_free(e);
 
     } else {
 
@@ -905,7 +905,7 @@ ImagingOutlineNew(void)
 {
     ImagingOutline outline;
 
-    outline = calloc(1, sizeof(struct ImagingOutlineInstance));
+    outline = memmgr_calloc(1, sizeof(struct ImagingOutlineInstance));
     if (!outline)
         return (ImagingOutline) ImagingError_MemoryError();
 
@@ -924,9 +924,9 @@ ImagingOutlineDelete(ImagingOutline outline)
         return;
 
     if (outline->edges)
-        free(outline->edges);
+        memmgr_free(outline->edges);
 
-    free(outline);
+    memmgr_free(outline);
 }
 
 
@@ -939,14 +939,14 @@ allocate(ImagingOutline outline, int extra)
         /* expand outline buffer */
         outline->size += extra + 25;
         if (!outline->edges) {
-            /* malloc check ok, uses calloc for overflow */
-            e = calloc(outline->size, sizeof(Edge));
+            /* memmgr_alloc check ok, uses memmgr_calloc for overflow */
+            e = memmgr_calloc(outline->size, sizeof(Edge));
         } else {
             if (outline->size > INT_MAX / sizeof(Edge)) {
                 return NULL;
             }
-            /* malloc check ok, overflow checked above */
-            e = realloc(outline->edges, outline->size * sizeof(Edge));
+            /* memmgr_alloc check ok, overflow checked above */
+            e = memmgr_realloc(outline->edges, outline->size * sizeof(Edge));
         }
         if (!e)
             return NULL;
@@ -1110,7 +1110,7 @@ ImagingOutlineTransform(ImagingOutline outline, double a[6])
 
     }
 
-    free(eIn);
+    memmgr_free(eIn);
 
     return 0;
 }

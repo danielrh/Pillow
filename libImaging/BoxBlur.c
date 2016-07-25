@@ -184,7 +184,7 @@ ImagingHorizontalBoxBlur(Imaging imOut, Imaging imIn, float floatRadius)
     int edgeA = MIN(radius + 1, imIn->xsize);
     int edgeB = MAX(imIn->xsize - radius - 1, 0);
 
-    UINT32 *lineOut = calloc(imIn->xsize, sizeof(UINT32));
+    UINT32 *lineOut = memmgr_calloc(imIn->xsize, sizeof(UINT32));
     if (lineOut == NULL)
         return ImagingError_MemoryError();
 
@@ -227,7 +227,7 @@ ImagingHorizontalBoxBlur(Imaging imOut, Imaging imIn, float floatRadius)
 
     ImagingSectionLeave(&cookie);
 
-    free(lineOut);
+    memmgr_free(lineOut);
 
     return imOut;
 }

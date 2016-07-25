@@ -40,8 +40,8 @@ static int _heap_test(Heap *);
 #endif
 
 void ImagingQuantHeapFree(Heap *h) {
-   free(h->heap);
-   free(h);
+   memmgr_free(h->heap);
+   memmgr_free(h);
 }
 
 static int _heap_grow(Heap *h,int newsize) {
@@ -51,12 +51,12 @@ static int _heap_grow(Heap *h,int newsize) {
    if (newsize > INT_MAX / sizeof(void *)){
        return 0;
    }
-   /* malloc check ok, using calloc for overflow, also checking
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow, also checking
       above due to memcpy below*/
-   newheap=calloc(newsize, sizeof(void *));
+   newheap=memmgr_calloc(newsize, sizeof(void *));
    if (!newheap) return 0;
    memcpy(newheap,h->heap,sizeof(void *)*h->heapsize);
-   free(h->heap);
+   memmgr_free(h->heap);
    h->heap=newheap;
    h->heapsize=newsize;
    return 1;
@@ -138,14 +138,14 @@ int ImagingQuantHeapTop(Heap *h,void **r) {
 Heap *ImagingQuantHeapNew(HeapCmpFunc cf) {
    Heap *h;
    
-   /* malloc check ok, small constant allocation */
-   h=malloc(sizeof(Heap));
+   /* memmgr_alloc check ok, small constant allocation */
+   h=memmgr_alloc(sizeof(Heap));
    if (!h) return NULL;
    h->heapsize=INITIAL_SIZE;
-   /* malloc check ok, using calloc for overflow */
-   h->heap=calloc(h->heapsize, sizeof(void *));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow */
+   h->heap=memmgr_calloc(h->heapsize, sizeof(void *));
    if (!h->heap) {
-       free(h);
+       memmgr_free(h);
        return NULL;
    }
    h->heapcount=0;

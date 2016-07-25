@@ -33,7 +33,7 @@ ImagingPaletteNew(const char* mode)
     if (strcmp(mode, "RGB") && strcmp(mode, "RGBA"))
         return (ImagingPalette) ImagingError_ModeError();
 
-    palette = calloc(1, sizeof(struct ImagingPaletteInstance));
+    palette = memmgr_calloc(1, sizeof(struct ImagingPaletteInstance));
     if (!palette)
         return (ImagingPalette) ImagingError_MemoryError();
 
@@ -103,8 +103,8 @@ ImagingPaletteDuplicate(ImagingPalette palette)
 
     if (!palette)
         return NULL;
-    /* malloc check ok, small constant allocation */
-    new_palette = malloc(sizeof(struct ImagingPaletteInstance));
+    /* memmgr_alloc check ok, small constant allocation */
+    new_palette = memmgr_alloc(sizeof(struct ImagingPaletteInstance));
     if (!new_palette)
         return (ImagingPalette) ImagingError_MemoryError();
 
@@ -123,8 +123,8 @@ ImagingPaletteDelete(ImagingPalette palette)
 
     if (palette) {
         if (palette->cache)
-            free(palette->cache);
-        free(palette);
+            memmgr_free(palette->cache);
+        memmgr_free(palette);
     }
 }
 
@@ -288,8 +288,8 @@ ImagingPaletteCachePrepare(ImagingPalette palette)
         /* The cache is 512k.  It might be a good idea to break it
            up into a pointer array (e.g. an 8-bit image?) */
 
-        /* malloc check ok, small constant allocation */
-        palette->cache = (INT16*) malloc(entries * sizeof(INT16));
+        /* memmgr_alloc check ok, small constant allocation */
+        palette->cache = (INT16*) memmgr_alloc(entries * sizeof(INT16));
         if (!palette->cache) {
             (void) ImagingError_MemoryError();
             return -1;
@@ -311,7 +311,7 @@ ImagingPaletteCacheDelete(ImagingPalette palette)
     /* Release the colour cache, if any */
 
     if (palette && palette->cache) {
-        free(palette->cache);
+        memmgr_free(palette->cache);
         palette->cache = NULL;
     }
 }

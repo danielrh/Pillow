@@ -301,15 +301,15 @@ ImagingJpegEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
 
 	/* Clean up */
         if (context->extra) {
-            free(context->extra);
+            memmgr_free(context->extra);
             context->extra = NULL;
         }
         if (context->rawExif) {
-            free(context->rawExif);
+            memmgr_free(context->rawExif);
             context->rawExif = NULL;
         }
         if (context->qtables) {
-            free(context->qtables);
+            memmgr_free(context->qtables);
             context->qtables = NULL;
         }
 

@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-
+#include "../memmgr.h"
 #include "QuantHash.h"
 
 typedef struct _HashNode {
@@ -47,7 +47,7 @@ static int _hashtable_insert_node(HashTable *,HashNode *,int,int,CollisionFunc);
 
 HashTable *hashtable_new(HashFunc hf,HashCmpFunc cf) {
    HashTable *h;
-   h=malloc(sizeof(HashTable));
+   h=memmgr_alloc(sizeof(HashTable));
    if (!h) { return NULL; }
    h->hashFunc=hf;
    h->cmpFunc=cf;
@@ -56,8 +56,8 @@ HashTable *hashtable_new(HashFunc hf,HashCmpFunc cf) {
    h->length=MIN_LENGTH;
    h->count=0;
    h->userData=NULL;
-   h->table=malloc(sizeof(HashNode *)*h->length);
-   if (!h->table) { free(h); return NULL; }
+   h->table=memmgr_alloc(sizeof(HashNode *)*h->length);
+   if (!h->table) { memmgr_free(h); return NULL; }
    memset (h->table,0,sizeof(HashNode *)*h->length);
    return h;
 }
@@ -96,7 +96,7 @@ static void _hashtable_rehash(HashTable *h,CollisionFunc cf,uint32_t newSize) {
    HashNode *n,*nn;
    uint32_t oldSize;
    oldSize=h->length;
-   h->table=malloc(sizeof(HashNode *)*newSize);
+   h->table=memmgr_alloc(sizeof(HashNode *)*newSize);
    if (!h->table) {
       h->table=oldTable;
       return;
@@ -110,7 +110,7 @@ static void _hashtable_rehash(HashTable *h,CollisionFunc cf,uint32_t newSize) {
          _hashtable_insert_node(h,n,0,0,cf);
       }
    }
-   free(oldTable);
+   memmgr_free(oldTable);
 }
 
 static void _hashtable_resize(HashTable *h) {
@@ -141,7 +141,7 @@ static int _hashtable_insert_node(HashTable *h,HashNode *node,int resize,int upd
          if (cf) {
             nv->key=node->key;
             cf(h,&(nv->key),&(nv->value),node->key,node->value);
-            free(node);
+            memmgr_free(node);
             return 1;
          } else {
             if (h->valDestroyFunc) {
@@ -152,7 +152,7 @@ static int _hashtable_insert_node(HashTable *h,HashNode *node,int resize,int upd
             }
             nv->key=node->key;
             nv->value=node->value;
-            free(node);
+            memmgr_free(node);
             return 1;
          }
       } else if (i>0) {
@@ -188,7 +188,7 @@ static int _hashtable_insert(HashTable *h,HashKey_t key,HashVal_t val,int resize
       }
    }
    if (!update) {
-      t=malloc(sizeof(HashNode));
+      t=memmgr_alloc(sizeof(HashNode));
       if (!t) return 0;
       t->next=*n;
       *n=t;
@@ -218,7 +218,7 @@ static int _hashtable_lookup_or_insert(HashTable *h,HashKey_t key,HashVal_t *ret
          break;
       }
    }
-   t=malloc(sizeof(HashNode));
+   t=memmgr_alloc(sizeof(HashNode));
    if (!t) return 0;
    t->next=*n;
    *n=t;
@@ -259,7 +259,7 @@ int hashtable_insert_or_update_computed(HashTable *h,
          break;
       }
    }
-   t=malloc(sizeof(HashNode));
+   t=memmgr_alloc(sizeof(HashNode));
    if (!t) return 0;
    t->key=key;
    t->next=*n;
@@ -267,7 +267,7 @@ int hashtable_insert_or_update_computed(HashTable *h,
    if (newFunc) {
       newFunc(h,t->key,&(t->value));
    } else {
-      free(t);
+      memmgr_free(t);
       return 0;
    }
    h->count++;
@@ -309,7 +309,7 @@ void hashtable_foreach(HashTable *h,IteratorFunc i,void *u) {
    }
 }
 
-void hashtable_free(HashTable *h) {
+void hashtable_memmgr_free(HashTable *h) {
    HashNode *n,*nn;
    uint32_t i;
 
@@ -320,12 +320,12 @@ void hashtable_free(HashTable *h) {
       for (i=0;i<h->length;i++) {
          for (n=h->table[i];n;n=nn) {
             nn=n->next;
-            free(n);
+            memmgr_free(n);
          }
       }
-      free(h->table);
+      memmgr_free(h->table);
    }
-   free(h);
+   memmgr_free(h);
 }
 
 ValDestroyFunc hashtable_set_value_destroy_func(HashTable *h,ValDestroyFunc d) {
@@ -355,7 +355,7 @@ static int _hashtable_remove(HashTable *h,
          if (p) p=n->next; else h->table[hash]=n->next;
          *keyRet=n->key;
          *valRet=n->value;
-         free(n);
+         memmgr_free(n);
          h->count++;
          return 1;
       } else if (i>0) {
@@ -376,7 +376,7 @@ static int _hashtable_delete(HashTable *h,const HashKey_t key,int resize) {
          if (p) p=n->next; else h->table[hash]=n->next;
          if (h->valDestroyFunc) { h->valDestroyFunc(h,n->value); }
          if (h->keyDestroyFunc) { h->keyDestroyFunc(h,n->key); }
-         free(n);
+         memmgr_free(n);
          h->count++;
          return 1;
       } else if (i>0) {

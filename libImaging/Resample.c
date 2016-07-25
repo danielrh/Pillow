@@ -116,15 +116,15 @@ ImagingPrecompute(int inSize, int outSize, struct filter *filterp,
         return 0;
 
     /* coefficient buffer */
-    /* malloc check ok, overflow checked above */
-    kk = malloc(outSize * kmax * sizeof(double));
+    /* memmgr_alloc check ok, overflow checked above */
+    kk = memmgr_alloc(outSize * kmax * sizeof(double));
     if ( ! kk)
         return 0;
 
-    /* malloc check ok, kmax*sizeof(double) > 2*sizeof(int) */
-    xbounds = malloc(outSize * 2 * sizeof(int));
+    /* memmgr_alloc check ok, kmax*sizeof(double) > 2*sizeof(int) */
+    xbounds = memmgr_alloc(outSize * 2 * sizeof(int));
     if ( ! xbounds) {
-        free(kk);
+        memmgr_free(kk);
         return 0;
     }
 
@@ -179,10 +179,10 @@ ImagingResampleHorizontal_8bpc(Imaging imIn, int xsize, struct filter *filterp)
         return (Imaging) ImagingError_MemoryError();
     }
     
-    kk = malloc(xsize * kmax * sizeof(int));
+    kk = memmgr_alloc(xsize * kmax * sizeof(int));
     if ( ! kk) {
-        free(xbounds);
-        free(prekk);
+        memmgr_free(xbounds);
+        memmgr_free(prekk);
         return (Imaging) ImagingError_MemoryError();
     }
 
@@ -190,12 +190,12 @@ ImagingResampleHorizontal_8bpc(Imaging imIn, int xsize, struct filter *filterp)
         kk[x] = (int) (0.5 + prekk[x] * (1 << PRECISION_BITS));
     }
 
-    free(prekk);
+    memmgr_free(prekk);
 
     imOut = ImagingNew(imIn->mode, xsize, imIn->ysize);
     if ( ! imOut) {
-        free(kk);
-        free(xbounds);
+        memmgr_free(kk);
+        memmgr_free(xbounds);
         return NULL;
     }
 
@@ -268,8 +268,8 @@ ImagingResampleHorizontal_8bpc(Imaging imIn, int xsize, struct filter *filterp)
     }
 
     ImagingSectionLeave(&cookie);
-    free(kk);
-    free(xbounds);
+    memmgr_free(kk);
+    memmgr_free(xbounds);
     return imOut;
 }
 
@@ -291,10 +291,10 @@ ImagingResampleVertical_8bpc(Imaging imIn, int ysize, struct filter *filterp)
         return (Imaging) ImagingError_MemoryError();
     }
     
-    kk = malloc(ysize * kmax * sizeof(int));
+    kk = memmgr_alloc(ysize * kmax * sizeof(int));
     if ( ! kk) {
-        free(xbounds);
-        free(prekk);
+        memmgr_free(xbounds);
+        memmgr_free(prekk);
         return (Imaging) ImagingError_MemoryError();
     }
 
@@ -302,12 +302,12 @@ ImagingResampleVertical_8bpc(Imaging imIn, int ysize, struct filter *filterp)
         kk[y] = (int) (0.5 + prekk[y] * (1 << PRECISION_BITS));
     }
 
-    free(prekk);
+    memmgr_free(prekk);
 
     imOut = ImagingNew(imIn->mode, imIn->xsize, ysize);
     if ( ! imOut) {
-        free(kk);
-        free(xbounds);
+        memmgr_free(kk);
+        memmgr_free(xbounds);
         return NULL;
     }
 
@@ -380,8 +380,8 @@ ImagingResampleVertical_8bpc(Imaging imIn, int ysize, struct filter *filterp)
     }
 
     ImagingSectionLeave(&cookie);
-    free(kk);
-    free(xbounds);
+    memmgr_free(kk);
+    memmgr_free(xbounds);
     return imOut;
 }
 
@@ -403,8 +403,8 @@ ImagingResampleHorizontal_32bpc(Imaging imIn, int xsize, struct filter *filterp)
 
     imOut = ImagingNew(imIn->mode, xsize, imIn->ysize);
     if ( ! imOut) {
-        free(kk);
-        free(xbounds);
+        memmgr_free(kk);
+        memmgr_free(xbounds);
         return NULL;
     }
 
@@ -440,8 +440,8 @@ ImagingResampleHorizontal_32bpc(Imaging imIn, int xsize, struct filter *filterp)
     }
 
     ImagingSectionLeave(&cookie);
-    free(kk);
-    free(xbounds);
+    memmgr_free(kk);
+    memmgr_free(xbounds);
     return imOut;
 }
 
@@ -463,8 +463,8 @@ ImagingResampleVertical_32bpc(Imaging imIn, int ysize, struct filter *filterp)
 
     imOut = ImagingNew(imIn->mode, imIn->xsize, ysize);
     if ( ! imOut) {
-        free(kk);
-        free(xbounds);
+        memmgr_free(kk);
+        memmgr_free(xbounds);
         return NULL;
     }
 
@@ -500,8 +500,8 @@ ImagingResampleVertical_32bpc(Imaging imIn, int ysize, struct filter *filterp)
     }
 
     ImagingSectionLeave(&cookie);
-    free(kk);
-    free(xbounds);
+    memmgr_free(kk);
+    memmgr_free(xbounds);
     return imOut;
 }
 

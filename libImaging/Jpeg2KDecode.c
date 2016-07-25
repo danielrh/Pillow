@@ -35,7 +35,7 @@ static void
 j2k_error(const char *msg, void *client_data)
 {
     JPEG2KDECODESTATE *state = (JPEG2KDECODESTATE *) client_data;
-    free((void *)state->error_msg);
+    memmgr_free((void *)state->error_msg);
     state->error_msg = strdup(msg);
 }
 
@@ -704,8 +704,8 @@ j2k_decode_entry(Imaging im, ImagingCodecState state)
         tile_info.y1 = (tile_info.y1 + correction) >> context->reduce;
 
         if (buffer_size < tile_info.data_size) {
-            /* malloc check ok, tile_info.data_size from openjpeg */
-            UINT8 *new = realloc (state->buffer, tile_info.data_size);
+            /* memmgr_alloc check ok, tile_info.data_size from openjpeg */
+            UINT8 *new = memmgr_realloc (state->buffer, tile_info.data_size);
             if (!new) {
                 state->errcode = IMAGING_CODEC_MEMORY;
                 state->state = J2K_STATE_FAILED;
@@ -804,7 +804,7 @@ ImagingJpeg2KDecodeCleanup(ImagingCodecState state) {
     JPEG2KDECODESTATE *context = (JPEG2KDECODESTATE *)state->context;
 
     if (context->error_msg) {
-        free ((void *)context->error_msg);
+        memmgr_free ((void *)context->error_msg);
     }
        
     context->error_msg = NULL;

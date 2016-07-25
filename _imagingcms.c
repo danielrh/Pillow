@@ -159,7 +159,7 @@ cms_profile_tobytes(PyObject* self, PyObject* args)
         return NULL;
     }
 
-    pProfile = (char*)malloc(nProfile);
+    pProfile = (char*)memmgr_alloc(nProfile);
     if (!pProfile) {
         PyErr_SetString(PyExc_IOError, "Out of Memory");
         return NULL;
@@ -167,7 +167,7 @@ cms_profile_tobytes(PyObject* self, PyObject* args)
 
     if (!cmsSaveProfileToMem(profile, pProfile, &nProfile)) {
         PyErr_SetString(PyExc_IOError, "Could not get profile");
-        free(pProfile);
+        memmgr_free(pProfile);
         return NULL;
     }
 
@@ -177,7 +177,7 @@ cms_profile_tobytes(PyObject* self, PyObject* args)
     ret = PyString_FromStringAndSize(pProfile, (Py_ssize_t)nProfile);
 #endif
 
-    free(pProfile);
+    memmgr_free(pProfile);
     return ret;
 }
 
@@ -554,7 +554,7 @@ _profile_read_mlu(CmsProfileObject* self, cmsTagSignature info)
         return Py_None;
     }
 
-    buf = malloc(len);
+    buf = memmgr_alloc(len);
     if (!buf) {
         PyErr_SetString(PyExc_IOError, "Out of Memory");
         return NULL;
@@ -565,7 +565,7 @@ _profile_read_mlu(CmsProfileObject* self, cmsTagSignature info)
     cmsMLUgetWide(mlu, lc, cc, buf, len);
     // buf contains additional junk after \0
     uni = PyUnicode_FromWideChar(buf, wcslen(buf));
-    free(buf);
+    memmgr_free(buf);
 
     return uni;
 }

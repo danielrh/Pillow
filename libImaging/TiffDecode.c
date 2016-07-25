@@ -65,8 +65,8 @@ tsize_t _tiffWriteProc(thandle_t hdata, tdata_t buf, tsize_t size) {
 			// newsize*=2; // UNDONE, by 64k chunks?
 		}
 		TRACE(("Reallocing in write to %d bytes\n", (int)newsize));
-        /* malloc check ok, overflow checked above */
-		new = realloc(state->data, newsize);
+        /* memmgr_alloc check ok, overflow checked above */
+		new = memmgr_realloc(state->data, newsize);
 		if (!new) {
 			// fail out
 			return 0;
@@ -277,7 +277,7 @@ int ImagingLibTiffEncodeInit(ImagingCodecState state, char *filename, int fp) {
 	// Open the FD or the pointer as a tiff file, for writing.
 	// We may have to do some monkeying around to make this really work.
 	// If we have a fp, then we're good.
-	// If we have a memory string, we're probably going to have to malloc, then
+	// If we have a memory string, we're probably going to have to memmgr_alloc, then
 	// shuffle bytes into the writescanline process.
 	// Going to have to deal with the directory as well.
 
@@ -307,10 +307,10 @@ int ImagingLibTiffEncodeInit(ImagingCodecState state, char *filename, int fp) {
 		TRACE(("Opening using fd: %d for writing \n",clientstate->fp));
 		clientstate->tiff = TIFFFdOpen(clientstate->fp, filename, mode);
 	} else {
-		// malloc a buffer to write the tif, we're going to need to realloc or something if we need bigger.
+		// memmgr_alloc a buffer to write the tif, we're going to need to memmgr_realloc or something if we need bigger.
 		TRACE(("Opening a buffer for writing \n"));
-        /* malloc check ok, small constant allocation */
-		clientstate->data = malloc(bufsize);
+        /* memmgr_alloc check ok, small constant allocation */
+		clientstate->data = memmgr_alloc(bufsize);
 		clientstate->size = bufsize;
 		clientstate->flrealloc=1;
 
@@ -392,7 +392,7 @@ int ImagingLibTiffEncode(Imaging im, ImagingCodecState state, UINT8* buffer, int
 				state->errcode = IMAGING_CODEC_BROKEN;
 				TIFFClose(tiff);
 				if (!clientstate->fp){
-					free(clientstate->data);
+					memmgr_free(clientstate->data);
 				}
 				return -1;
 			}
@@ -409,7 +409,7 @@ int ImagingLibTiffEncode(Imaging im, ImagingCodecState state, UINT8* buffer, int
 				state->errcode = IMAGING_CODEC_MEMORY;
 				TIFFClose(tiff);
 				if (!clientstate->fp){
-					free(clientstate->data);
+					memmgr_free(clientstate->data);
 				}
 				return -1;
 			}
@@ -425,9 +425,9 @@ int ImagingLibTiffEncode(Imaging im, ImagingCodecState state, UINT8* buffer, int
 		int read = (int)_tiffReadProc(clientstate, (tdata_t)buffer, (tsize_t)bytes);
 		TRACE(("Buffer: %p: %c%c%c%c\n", buffer, (char)buffer[0], (char)buffer[1],(char)buffer[2], (char)buffer[3]));
 		if (clientstate->loc == clientstate->eof) {
-			TRACE(("Hit EOF, calling an end, freeing data"));
+			TRACE(("Hit EOF, calling an end, memmgr_freeing data"));
 			state->errcode = IMAGING_CODEC_END;
-			free(clientstate->data);
+			memmgr_free(clientstate->data);
 		}
 		return read;
 	}

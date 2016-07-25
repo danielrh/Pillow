@@ -83,7 +83,7 @@
 
 #include "py3.h"
 
-/* Configuration stuff. Feel free to undef things you don't need. */
+/* Configuration stuff. Feel memmgr_free to undef things you don't need. */
 #define WITH_IMAGECHOPS /* ImageChops support */
 #define WITH_IMAGEDRAW /* ImageDraw support */
 #define WITH_MAPPING /* use memory mapping to read some file formats */
@@ -371,7 +371,7 @@ getlist(PyObject* arg, Py_ssize_t* length, const char* wrong_length, int type)
           specified in type
        - sequence length is checked against the length parameter IF
           an error parameter is passed in wrong_length
-       - caller is responsible for freeing the memory    
+       - caller is responsible for memmgr_freeing the memory    
     */
 
     Py_ssize_t i, n; 
@@ -392,15 +392,15 @@ getlist(PyObject* arg, Py_ssize_t* length, const char* wrong_length, int type)
         return NULL;
     }
 
-    /* malloc check ok, type & ff is just a sizeof(something)
-       calloc checks for overflow */
-    list = calloc(n, type & 0xff);
+    /* memmgr_alloc check ok, type & ff is just a sizeof(something)
+       memmgr_calloc checks for overflow */
+    list = memmgr_calloc(n, type & 0xff);
     if (!list)
         return PyErr_NoMemory();
 
     seq = PySequence_Fast(arg, must_be_sequence);
     if (!seq) {
-        free(list);
+        memmgr_free(list);
         PyErr_SetString(PyExc_TypeError, must_be_sequence);
         return NULL;
     }
@@ -873,7 +873,7 @@ _filter(ImagingObject* self, PyObject* args)
     if (!kerneldata)
         return NULL;
     if (kernelsize != (Py_ssize_t) xsize * (Py_ssize_t) ysize) {
-        free(kerneldata);
+        memmgr_free(kerneldata);
         return ImagingError_ValueError("bad kernel size");
     }
 
@@ -881,7 +881,7 @@ _filter(ImagingObject* self, PyObject* args)
         ImagingFilter(self->image, xsize, ysize, kerneldata, offset, divisor)
         );
 
-    free(kerneldata);
+    memmgr_free(kerneldata);
 
     return imOut;
 }
@@ -1179,7 +1179,7 @@ _point(ImagingObject* self, PyObject* args)
         if (!data)
             return NULL;
         im = ImagingPoint(self->image, mode, (void*) data);
-        free(data);
+        memmgr_free(data);
 
     } else if (!strcmp(self->image->mode, "I") && mode && !strcmp(mode, "L")) {
         UINT8* data;
@@ -1191,7 +1191,7 @@ _point(ImagingObject* self, PyObject* args)
         if (!data)
             return NULL;
         im = ImagingPoint(self->image, mode, (void*) data);
-        free(data);
+        memmgr_free(data);
 
     } else {
         INT32* data;
@@ -1227,7 +1227,7 @@ _point(ImagingObject* self, PyObject* args)
                 lut[i] = CLIP(data[i]);
             im = ImagingPoint(self->image, mode, (void*) lut);
         }
-        free(data);
+        memmgr_free(data);
     }
 
     return PyImagingNew(im);
@@ -1665,7 +1665,7 @@ _transform2(ImagingObject* self, PyObject* args)
         self->image, imagep->image, method,
         x0, y0, x1, y1, a, filter, 1);
 
-    free(a);
+    memmgr_free(a);
 
     if (!imOut)
         return NULL;
@@ -1822,7 +1822,7 @@ _getcolors(ImagingObject* self, PyObject* args)
         }
     }
 
-    free(items);
+    memmgr_free(items);
 
     return out;
 }
@@ -1862,13 +1862,13 @@ _getprojection(ImagingObject* self, PyObject* args)
     unsigned char* yprofile;
     PyObject* result;
 
-    /* malloc check ok */
-    xprofile = malloc(self->image->xsize);
-    yprofile = malloc(self->image->ysize);
+    /* memmgr_alloc check ok */
+    xprofile = memmgr_alloc(self->image->xsize);
+    yprofile = memmgr_alloc(self->image->ysize);
 
     if (xprofile == NULL || yprofile == NULL) {
-        free(xprofile);
-        free(yprofile);
+        memmgr_free(xprofile);
+        memmgr_free(yprofile);
         return PyErr_NoMemory();
     }
 
@@ -1878,8 +1878,8 @@ _getprojection(ImagingObject* self, PyObject* args)
                            xprofile, self->image->xsize,
                            yprofile, self->image->ysize);
 
-    free(xprofile);
-    free(yprofile);
+    memmgr_free(xprofile);
+    memmgr_free(yprofile);
 
     return result;
 }
@@ -2353,7 +2353,7 @@ _draw_arc(ImagingDrawObject* self, PyObject* args)
                        start, end, &ink, op
                        );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;
@@ -2389,7 +2389,7 @@ _draw_bitmap(ImagingDrawObject* self, PyObject* args)
         &ink, self->blend
         );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;
@@ -2425,7 +2425,7 @@ _draw_chord(ImagingDrawObject* self, PyObject* args)
                          start, end, &ink, fill, self->blend
                          );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;
@@ -2460,7 +2460,7 @@ _draw_ellipse(ImagingDrawObject* self, PyObject* args)
                            &ink, fill, self->blend
                            );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;
@@ -2509,7 +2509,7 @@ _draw_lines(ImagingDrawObject* self, PyObject* args)
                     self->image->image,
                     (int) p[0], (int) p[1], (int) p[2], (int) p[3],
                     &ink, self->blend) < 0) {
-                free(xy);
+                memmgr_free(xy);
                 return NULL;
             }
         }
@@ -2526,13 +2526,13 @@ _draw_lines(ImagingDrawObject* self, PyObject* args)
                     self->image->image,
                     (int) p[0], (int) p[1], (int) p[2], (int) p[3],
                     &ink, width, self->blend) < 0) {
-                free(xy);
+                memmgr_free(xy);
                 return NULL;
             }
         }
     }
 
-    free(xy);
+    memmgr_free(xy);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -2572,12 +2572,12 @@ _draw_points(ImagingDrawObject* self, PyObject* args)
     double *p = &xy[i+i];
     if (ImagingDrawPoint(self->image->image, (int) p[0], (int) p[1],
                              &ink, self->blend) < 0) {
-        free(xy);
+        memmgr_free(xy);
         return NULL;
     }
     }
 
-    free(xy);
+    memmgr_free(xy);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -2641,7 +2641,7 @@ _draw_pieslice(ImagingDrawObject* self, PyObject* args)
                             start, end, &ink, fill, self->blend
                             );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;
@@ -2674,22 +2674,22 @@ _draw_polygon(ImagingDrawObject* self, PyObject* args)
     }
 
     /* Copy list of vertices to array */
-    ixy = (int*) calloc(n, 2 * sizeof(int));
+    ixy = (int*) memmgr_calloc(n, 2 * sizeof(int));
 
     for (i = 0; i < n; i++) {
         ixy[i+i] = (int) xy[i+i];
         ixy[i+i+1] = (int) xy[i+i+1];
     }
 
-    free(xy);
+    memmgr_free(xy);
 
     if (ImagingDrawPolygon(self->image->image, n, ixy,
                            &ink, fill, self->blend) < 0) {
-        free(ixy);
+        memmgr_free(ixy);
         return NULL;
     }
 
-    free(ixy);
+    memmgr_free(ixy);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -2721,7 +2721,7 @@ _draw_rectangle(ImagingDrawObject* self, PyObject* args)
                              &ink, fill, self->blend
                              );
 
-    free(xy);
+    memmgr_free(xy);
 
     if (n < 0)
         return NULL;

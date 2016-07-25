@@ -98,7 +98,7 @@ ImagingGifDecode(Imaging im, ImagingCodecState state, UINT8* buffer, int bytes)
 
 	if (state->state == 1) {
 
-	    /* First free entry in table */
+	    /* First memmgr_free entry in table */
 	    context->next = context->clear + 2;
 
 	    /* Initial code size */

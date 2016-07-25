@@ -1107,7 +1107,7 @@ topalette(Imaging imOut, Imaging imIn, ImagingPalette inpalette, int dither)
             /* floyd-steinberg dither */
 
             int* errors;
-            errors = calloc(imIn->xsize + 1, sizeof(int) * 3);
+            errors = memmgr_calloc(imIn->xsize + 1, sizeof(int) * 3);
             if (!errors) {
                 ImagingDelete(imOut);
                 return ImagingError_MemoryError();
@@ -1163,7 +1163,7 @@ topalette(Imaging imOut, Imaging imIn, ImagingPalette inpalette, int dither)
 
             }
             ImagingSectionLeave(&cookie);
-            free(errors);
+            memmgr_free(errors);
 
         } else {
 
@@ -1215,7 +1215,7 @@ tobilevel(Imaging imOut, Imaging imIn, int dither)
     if (!imOut)
         return NULL;
 
-    errors = calloc(imIn->xsize + 1, sizeof(int));
+    errors = memmgr_calloc(imIn->xsize + 1, sizeof(int));
     if (!errors) {
         ImagingDelete(imOut);
         return ImagingError_MemoryError();
@@ -1279,7 +1279,7 @@ tobilevel(Imaging imOut, Imaging imIn, int dither)
         ImagingSectionLeave(&cookie);
     }
 
-    free(errors);
+    memmgr_free(errors);
 
     return imOut;
 }

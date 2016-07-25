@@ -61,8 +61,8 @@ emit(GIFENCODERSTATE *context, int byte)
             block = context->free;
             context->free = NULL;
         } else {
-            /* malloc check ok, small constant allocation */
-            block = malloc(sizeof(GIFENCODERBLOCK));
+            /* memmgr_alloc check ok, small constant allocation */
+            block = memmgr_alloc(sizeof(GIFENCODERBLOCK));
             if (!block)
                 return 0;
         }
@@ -301,7 +301,7 @@ ImagingGifEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
                 context->flush = block->next;
 
                 if (context->free)
-                    free(context->free);
+                    memmgr_free(context->free);
                 context->free = block;
 
             }
@@ -309,7 +309,7 @@ ImagingGifEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
             if (state->state == EXIT) {
                 /* this was the last block! */
                 if (context->free)
-                    free(context->free);
+                    memmgr_free(context->free);
                 state->errcode = IMAGING_CODEC_END;
                 return ptr - buf;
             }

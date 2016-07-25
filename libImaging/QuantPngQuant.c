@@ -64,7 +64,7 @@ quantize_pngquant(
     /* write output palette */
     const liq_palette *l_palette = liq_get_palette(remap);
     *paletteLength = l_palette->count;
-    *palette = malloc(sizeof(Pixel) * l_palette->count);
+    *palette = memmgr_alloc(sizeof(Pixel) * l_palette->count);
     if (!*palette) { goto err; }
     for (i = 0; i < l_palette->count; i++) {
         (*palette)[i].c.b = l_palette->entries[i].b;
@@ -74,9 +74,9 @@ quantize_pngquant(
     }
 
     /* write output pixels (pngquant uses char array) */
-    charMatrix = malloc(width * height);
+    charMatrix = memmgr_alloc(width * height);
     if (!charMatrix) { goto err; }
-    charMatrixRows = malloc(height * sizeof(unsigned char*));
+    charMatrixRows = memmgr_alloc(height * sizeof(unsigned char*));
     if (!charMatrixRows) { goto err; }
     for (y = 0; y < height; y++) {
         charMatrixRows[y] = &charMatrix[y * width];
@@ -86,7 +86,7 @@ quantize_pngquant(
     }
 
     /* transcribe output pixels (pillow uses uint32_t array) */
-    *quantizedPixels = malloc(sizeof(uint32_t) * width * height);
+    *quantizedPixels = memmgr_alloc(sizeof(uint32_t) * width * height);
     if (!*quantizedPixels) { goto err; }
     for (i = 0; i < width * height; i++) {
         (*quantizedPixels)[i] = charMatrix[i];
@@ -98,11 +98,11 @@ err:
     if (attr) liq_attr_destroy(attr);
     if (image) liq_image_destroy(image);
     if (remap) liq_result_destroy(remap);
-    free(charMatrix);
-    free(charMatrixRows);
+    memmgr_free(charMatrix);
+    memmgr_free(charMatrixRows);
     if (!result)  {
-        free(*quantizedPixels);
-        free(*palette);
+        memmgr_free(*quantizedPixels);
+        memmgr_free(*palette);
     }
     return result;
 }

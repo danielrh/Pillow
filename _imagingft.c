@@ -4,7 +4,7 @@
  * a FreeType 2.X driver for PIL
  *
  * history:
- * 2001-02-17 fl  Created (based on old experimental freetype 1.0 code)
+ * 2001-02-17 fl  Created (based on old experimental memmgr_freetype 1.0 code)
  * 2001-04-18 fl  Fixed some egcs compiler nits
  * 2002-11-08 fl  Added unicode support; more font metrics, etc
  * 2003-05-20 fl  Fixed compilation under 1.5.2 and newer non-unicode builds
@@ -76,7 +76,7 @@ geterror(int code)
             return NULL;
         }
 
-    PyErr_SetString(PyExc_IOError, "unknown freetype error");
+    PyErr_SetString(PyExc_IOError, "unknown memmgr_freetype error");
     return NULL;
 }
 
@@ -127,7 +127,7 @@ getfont(PyObject* self_, PyObject* args, PyObject* kw)
         error = FT_New_Face(library, filename, index, &self->face);
     } else {
         /* need to have allocated storage for font_bytes for the life of the object.*/
-        /* Don't free this before FT_Done_Face */
+        /* Don't memmgr_free this before FT_Done_Face */
         self->font_bytes = PyMem_Malloc(font_bytes_size);
         if (!self->font_bytes) {
             error = 65; // Out of Memory in Freetype.
@@ -591,7 +591,7 @@ setup_module(PyObject* m) {
 #else
     v = PyString_FromFormat("%d.%d.%d", major, minor, patch);
 #endif
-    PyDict_SetItemString(d, "freetype2_version", v);
+    PyDict_SetItemString(d, "memmgr_freetype2_version", v);
 
     return 0;
 }

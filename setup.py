@@ -555,6 +555,10 @@ class pil_build_ext(build_ext):
             libs.extend(["kernel32", "user32", "gdi32"])
         if struct.unpack("h", "\0\1".encode('ascii'))[0] == 1:
             defs.append(("WORDS_BIGENDIAN", None))
+#        defs.append(("malloc","memmgr_alloc"))
+#        defs.append(("realloc","memmgr_realloc"))
+#        defs.append(("calloc","memmgr_calloc"))
+#        defs.append(("free","memmgr_free"))
 
         exts = [(Extension("PIL._imaging",
                            files,
@@ -567,7 +571,8 @@ class pil_build_ext(build_ext):
         if feature.freetype:
             exts.append(Extension("PIL._imagingft",
                                   ["_imagingft.c"],
-                                  libraries=["freetype"]))
+                                  libraries=["freetype"],
+                           define_macros=defs))
 
         if feature.lcms:
             extra = []
@@ -575,7 +580,8 @@ class pil_build_ext(build_ext):
                 extra.extend(["user32", "gdi32"])
             exts.append(Extension("PIL._imagingcms",
                                   ["_imagingcms.c"],
-                                  libraries=[feature.lcms] + extra))
+                                  libraries=[feature.lcms] + extra,
+                           define_macros=defs))
 
         if feature.webp:
             libs = [feature.webp]
@@ -595,10 +601,13 @@ class pil_build_ext(build_ext):
         exts.append(Extension("PIL._imagingtk",
                               ["_imagingtk.c", "Tk/tkImaging.c"],
                               include_dirs=['Tk'],
-                              libraries=tk_libs))
+                              libraries=tk_libs,
+                           define_macros=defs))
 
-        exts.append(Extension("PIL._imagingmath", ["_imagingmath.c"]))
-        exts.append(Extension("PIL._imagingmorph", ["_imagingmorph.c"]))
+        exts.append(Extension("PIL._imagingmath", ["_imagingmath.c"],
+                           define_macros=defs))
+        exts.append(Extension("PIL._imagingmorph", ["_imagingmorph.c"],
+                           define_macros=defs))
 
         self.extensions[:] = exts
 
@@ -743,7 +752,12 @@ setup(name=NAME,
           'Programming Language :: Python :: Implementation :: PyPy',
       ],
       cmdclass={"build_ext": pil_build_ext},
-      ext_modules=[Extension("PIL._imaging", ["_imaging.c"])],
+      ext_modules=[Extension("PIL._imaging", ["_imaging.c"],
+#                           define_macros=[("malloc","memmgr_alloc"),
+#      ("realloc","memmgr_realloc"),
+#      ("calloc","memmgr_calloc"),
+#      ("free","memmgr_free")]
+                             )],
       include_package_data=True,
       packages=find_packages(),
       scripts=glob.glob("Scripts/*.py"),

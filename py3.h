@@ -1,3 +1,4 @@
+#include "memmgr.h"
 /*
     Python3 definition file to consistently map the code to Python 2.6 or
     Python 3.

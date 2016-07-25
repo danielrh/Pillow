@@ -37,7 +37,7 @@ ImagingZipEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
 
         /* Valid modes are ZIP_PNG, ZIP_PNG_PALETTE, and ZIP_TIFF */
 
-        /* overflow check for malloc */
+        /* overflow check for memmgr_alloc */
         if (state->bytes > INT_MAX - 1) {
             state->errcode = IMAGING_CODEC_MEMORY;
             return -1;
@@ -45,21 +45,21 @@ ImagingZipEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
         
         /* Expand standard buffer to make room for the filter selector,
            and allocate filter buffers */
-        free(state->buffer);
-        /* malloc check ok, overflow checked above */
-        state->buffer = (UINT8*) malloc(state->bytes+1);
-        context->previous = (UINT8*) malloc(state->bytes+1);
-        context->prior = (UINT8*) malloc(state->bytes+1);
-        context->up = (UINT8*) malloc(state->bytes+1);
-        context->average = (UINT8*) malloc(state->bytes+1);
-        context->paeth = (UINT8*) malloc(state->bytes+1);
+        memmgr_free(state->buffer);
+        /* memmgr_alloc check ok, overflow checked above */
+        state->buffer = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->previous = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->prior = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->up = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->average = (UINT8*) memmgr_alloc(state->bytes+1);
+        context->paeth = (UINT8*) memmgr_alloc(state->bytes+1);
         if (!state->buffer || !context->previous || !context->prior ||
             !context->up || !context->average || !context->paeth) {
-            free(context->paeth);
-            free(context->average);
-            free(context->up);
-            free(context->prior);
-            free(context->previous);
+            memmgr_free(context->paeth);
+            memmgr_free(context->average);
+            memmgr_free(context->up);
+            memmgr_free(context->prior);
+            memmgr_free(context->previous);
             state->errcode = IMAGING_CODEC_MEMORY;
             return -1;
         }
@@ -134,11 +134,11 @@ ImagingZipEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
                 state->errcode = IMAGING_CODEC_MEMORY;
             else
                 state->errcode = IMAGING_CODEC_CONFIG;
-            free(context->paeth);
-            free(context->average);
-            free(context->up);
-            free(context->prior);
-            free(context->previous);
+            memmgr_free(context->paeth);
+            memmgr_free(context->average);
+            memmgr_free(context->up);
+            memmgr_free(context->prior);
+            memmgr_free(context->previous);
             deflateEnd(&context->z_stream);
             return -1;
         }
@@ -288,11 +288,11 @@ ImagingZipEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
                         state->errcode = IMAGING_CODEC_MEMORY;
                     else
                         state->errcode = IMAGING_CODEC_CONFIG;
-                    free(context->paeth);
-                    free(context->average);
-                    free(context->up);
-                    free(context->prior);
-                    free(context->previous);
+                    memmgr_free(context->paeth);
+                    memmgr_free(context->average);
+                    memmgr_free(context->up);
+                    memmgr_free(context->prior);
+                    memmgr_free(context->previous);
                     deflateEnd(&context->z_stream);
                     ImagingSectionLeave(&cookie);
                     return -1;
@@ -318,11 +318,11 @@ ImagingZipEncode(Imaging im, ImagingCodecState state, UINT8* buf, int bytes)
 
                 if (err == Z_STREAM_END) {
 
-                    free(context->paeth);
-                    free(context->average);
-                    free(context->up);
-                    free(context->prior);
-                    free(context->previous);
+                    memmgr_free(context->paeth);
+                    memmgr_free(context->average);
+                    memmgr_free(context->up);
+                    memmgr_free(context->prior);
+                    memmgr_free(context->previous);
 
                     deflateEnd(&context->z_stream);
 
@@ -357,7 +357,7 @@ ImagingZipEncodeCleanup(ImagingCodecState state) {
     ZIPSTATE* context = (ZIPSTATE*) state->context;
 
     if (context->dictionary) {
-        free (context->dictionary);
+        memmgr_free (context->dictionary);
         context->dictionary = NULL;
     }
 

@@ -32,7 +32,7 @@ static void
 j2k_error(const char *msg, void *client_data)
 {
     JPEG2KENCODESTATE *state = (JPEG2KENCODESTATE *) client_data;
-    free((void *)state->error_msg);
+    memmgr_free((void *)state->error_msg);
     state->error_msg = strdup(msg);
 }
 
@@ -66,14 +66,14 @@ j2k_skip(OPJ_OFF_T p_nb_bytes, void *p_user_data)
     int result;
 
     /* Explicitly write zeros */
-    buffer = calloc(p_nb_bytes,1);
+    buffer = memmgr_calloc(p_nb_bytes,1);
     if (!buffer) {
         return (OPJ_OFF_T)-1;
     }
     
     result = _imaging_write_pyFd(state->fd, buffer, p_nb_bytes);
 
-    free(buffer);
+    memmgr_free(buffer);
     
     return result ? result : p_nb_bytes;
 }
@@ -501,7 +501,7 @@ j2k_encode_entry(Imaging im, ImagingCodecState state)
     tiles_y = (im->ysize + (params.image_offset_y0 - params.cp_ty0)
                + tile_height - 1) / tile_height;
 
-    /* check for integer overflow for the malloc line, checking any expression
+    /* check for integer overflow for the memmgr_alloc line, checking any expression
        that may multiply either tile_width or tile_height */
     _overflow_scale_factor = components * prec;
     if (( tile_width > UINT_MAX / _overflow_scale_factor ) ||
@@ -512,8 +512,8 @@ j2k_encode_entry(Imaging im, ImagingCodecState state)
         state->state = J2K_STATE_FAILED;
         goto quick_exit;
     }
-    /* malloc check ok, checked for overflow above */
-    state->buffer = malloc (tile_width * tile_height * components * prec / 8);
+    /* memmgr_alloc check ok, checked for overflow above */
+    state->buffer = memmgr_alloc (tile_width * tile_height * components * prec / 8);
     if (!state->buffer) {
         state->errcode = IMAGING_CODEC_BROKEN;
         state->state = J2K_STATE_FAILED;
@@ -612,7 +612,7 @@ ImagingJpeg2KEncodeCleanup(ImagingCodecState state) {
     }
 
     if (context->error_msg)
-        free ((void *)context->error_msg);
+        memmgr_free ((void *)context->error_msg);
 
     context->error_msg = NULL;
 

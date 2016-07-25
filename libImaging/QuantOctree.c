@@ -1,6 +1,6 @@
 /* Copyright (c) 2010 Oliver Tonnhofer <olt@bogosoft.com>, Omniscale
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
+// Permission is hereby granted, memmgr_free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-
+#include "../memmgr.h"
 #include "QuantOctree.h"
 
 typedef struct _ColorBucket{
@@ -54,8 +54,8 @@ static ColorCube
 new_color_cube(int r, int g, int b, int a) {
    ColorCube cube;
 
-   /* malloc check ok, small constant allocation */
-   cube = malloc(sizeof(struct _ColorCube));
+   /* memmgr_alloc check ok, small constant allocation */
+   cube = memmgr_alloc(sizeof(struct _ColorCube));
    if (!cube) return NULL;
 
    cube->rBits = MAX(r, 0);
@@ -65,7 +65,7 @@ new_color_cube(int r, int g, int b, int a) {
 
    /* overflow check for size multiplication below */
    if (cube->rBits + cube->gBits + cube->bBits + cube->aBits > 31) {
-       free(cube);
+       memmgr_free(cube);
        return NULL;
    }
 
@@ -84,21 +84,21 @@ new_color_cube(int r, int g, int b, int a) {
 
    /* the number of color buckets */
    cube->size = cube->rWidth * cube->gWidth * cube->bWidth * cube->aWidth;
-   /* malloc check ok, overflow checked above */
-   cube->buckets = calloc(cube->size, sizeof(struct _ColorBucket));
+   /* memmgr_alloc check ok, overflow checked above */
+   cube->buckets = memmgr_calloc(cube->size, sizeof(struct _ColorBucket));
 
    if (!cube->buckets) {
-      free(cube);
+      memmgr_free(cube);
       return NULL;
    }
    return cube;
 }
 
 static void
-free_color_cube(ColorCube cube) {
+memmgr_free_color_cube(ColorCube cube) {
    if (cube != NULL) {
-      free(cube->buckets);
-      free(cube);
+      memmgr_free(cube->buckets);
+      memmgr_free(cube);
    }
 }
 
@@ -166,8 +166,8 @@ create_sorted_color_palette(const ColorCube cube) {
    if (cube->size > LONG_MAX / sizeof(struct _ColorBucket)) {
        return NULL;
    }
-   /* malloc check ok, calloc + overflow check above for memcpy */
-   buckets = calloc(cube->size, sizeof(struct _ColorBucket));
+   /* memmgr_alloc check ok, memmgr_calloc + overflow check above for memcpy */
+   buckets = memmgr_calloc(cube->size, sizeof(struct _ColorBucket));
    if (!buckets) return NULL;
    memcpy(buckets, cube->buckets, sizeof(struct _ColorBucket)*cube->size);
 
@@ -297,8 +297,8 @@ combined_palette(ColorBucket bucketsA, long nBucketsA, ColorBucket bucketsB, lon
        (nBucketsA+nBucketsB) > LONG_MAX / sizeof(struct _ColorBucket)) {
        return NULL;
    }
-   /* malloc check ok, overflow check above */
-   result = calloc(nBucketsA + nBucketsB, sizeof(struct _ColorBucket));
+   /* memmgr_alloc check ok, overflow check above */
+   result = memmgr_calloc(nBucketsA + nBucketsB, sizeof(struct _ColorBucket));
    if (!result) {
        return NULL;
    }
@@ -312,8 +312,8 @@ create_palette_array(const ColorBucket palette, unsigned int paletteLength) {
    Pixel *paletteArray;
    unsigned int i;
    
-   /* malloc check ok, calloc for overflow */
-   paletteArray = calloc(paletteLength, sizeof(Pixel));
+   /* memmgr_alloc check ok, memmgr_calloc for overflow */
+   paletteArray = memmgr_calloc(paletteLength, sizeof(Pixel));
    if (!paletteArray) return NULL;
 
    for (i=0; i<paletteLength; i++) {
@@ -409,7 +409,7 @@ int quantize_octree(Pixel *pixelData,
 
    /* did the substraction cleared one or more coarse bucket? */
    while (nCoarseColors > count_used_color_buckets(coarseCube)) {
-      /* then we can use the free buckets for fine colors */
+      /* then we can use the memmgr_free buckets for fine colors */
       nAlreadySubtracted = nFineColors;
       nCoarseColors = count_used_color_buckets(coarseCube);
       nFineColors = nQuantPixels - nCoarseColors;
@@ -423,9 +423,9 @@ int quantize_octree(Pixel *pixelData,
    paletteBuckets = combined_palette(paletteBucketsCoarse, nCoarseColors,
                                      paletteBucketsFine, nFineColors);
 
-   free(paletteBucketsFine);
+   memmgr_free(paletteBucketsFine);
    paletteBucketsFine = NULL;
-   free(paletteBucketsCoarse);
+   memmgr_free(paletteBucketsCoarse);
    paletteBucketsCoarse = NULL;
    if (!paletteBuckets) goto error;
 
@@ -445,8 +445,8 @@ int quantize_octree(Pixel *pixelData,
    add_lookup_buckets(lookupCube, paletteBuckets, nFineColors, nCoarseColors);
 
    /* create result pixels and map palette indices */
-   /* malloc check ok, calloc for overflow */
-   qp = calloc(nPixels, sizeof(Pixel));
+   /* memmgr_alloc check ok, memmgr_calloc for overflow */
+   qp = memmgr_calloc(nPixels, sizeof(Pixel));
    if (!qp) goto error;
    map_image_pixels(pixelData, nPixels, lookupCube, qp);
 
@@ -457,22 +457,22 @@ int quantize_octree(Pixel *pixelData,
    *quantizedPixels = qp;
    *paletteLength = nQuantPixels;
 
-   free_color_cube(coarseCube);
-   free_color_cube(fineCube);
-   free_color_cube(lookupCube);
-   free_color_cube(coarseLookupCube);
-   free(paletteBuckets);
+   memmgr_free_color_cube(coarseCube);
+   memmgr_free_color_cube(fineCube);
+   memmgr_free_color_cube(lookupCube);
+   memmgr_free_color_cube(coarseLookupCube);
+   memmgr_free(paletteBuckets);
    return 1;
 
 error:
    /* everything is initialized to NULL
-      so we are safe to call free */
-   free(qp);
-   free_color_cube(lookupCube);
-   free_color_cube(coarseLookupCube);
-   free(paletteBucketsCoarse);
-   free(paletteBucketsFine);
-   free_color_cube(coarseCube);
-   free_color_cube(fineCube);
+      so we are safe to call memmgr_free */
+   memmgr_free(qp);
+   memmgr_free_color_cube(lookupCube);
+   memmgr_free_color_cube(coarseLookupCube);
+   memmgr_free(paletteBucketsCoarse);
+   memmgr_free(paletteBucketsFine);
+   memmgr_free_color_cube(coarseCube);
+   memmgr_free_color_cube(fineCube);
    return 0;
 }

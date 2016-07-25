@@ -245,7 +245,7 @@ getcolors32(Imaging im, int maxcolors, int* size)
     if (!im->image32)
 	return ImagingError_ModeError();
 
-    table = calloc(code_size + 1, sizeof(ImagingColorItem));
+    table = memmgr_calloc(code_size + 1, sizeof(ImagingColorItem));
     if (!table)
 	return ImagingError_MemoryError();
 

@@ -76,7 +76,7 @@ PyImaging_DecoderNew(int contextsize)
 
     /* Allocate decoder context */
     if (contextsize > 0) {
-        context = (void*) calloc(1, contextsize);
+        context = (void*) memmgr_calloc(1, contextsize);
         if (!context) {
             Py_DECREF(decoder);
             (void) PyErr_NoMemory();
@@ -110,8 +110,8 @@ _dealloc(ImagingDecoderObject* decoder)
 {
     if (decoder->cleanup)
         decoder->cleanup(&decoder->state);
-    free(decoder->state.buffer);
-    free(decoder->state.context);
+    memmgr_free(decoder->state.buffer);
+    memmgr_free(decoder->state.context);
     Py_XDECREF(decoder->lock);
     Py_XDECREF(decoder->state.fd);
     PyObject_Del(decoder);
@@ -204,8 +204,8 @@ _setimage(ImagingDecoderObject* decoder, PyObject* args)
             }
             state->bytes = (state->bits * state->xsize+7)/8;
         }
-        /* malloc check ok, oveflow checked above */
-        state->buffer = (UINT8*) malloc(state->bytes);
+        /* memmgr_alloc check ok, oveflow checked above */
+        state->buffer = (UINT8*) memmgr_alloc(state->bytes);
         if (!state->buffer)
             return PyErr_NoMemory();
     }

@@ -684,8 +684,8 @@ ImagingScaleAffine(Imaging imOut, Imaging imIn,
     if (y1 > imOut->ysize)
         y1 = imOut->ysize;
     
-    /* malloc check ok, uses calloc for overflow */
-    xintab = (int*) calloc(imOut->xsize, sizeof(int));
+    /* memmgr_alloc check ok, uses memmgr_calloc for overflow */
+    xintab = (int*) memmgr_calloc(imOut->xsize, sizeof(int));
     if (!xintab) {
         ImagingDelete(imOut);
         return (Imaging) ImagingError_MemoryError();
@@ -736,7 +736,7 @@ ImagingScaleAffine(Imaging imOut, Imaging imIn,
 
 #undef AFFINE_SCALE
 
-    free(xintab);
+    memmgr_free(xintab);
 
     return imOut;
 }

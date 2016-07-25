@@ -61,7 +61,7 @@ PyObject* WebPEncode_wrapper(PyObject* self, PyObject* args)
 #ifndef HAVE_WEBPMUX
     if (ret_size > 0) {
         PyObject *ret = PyBytes_FromStringAndSize((char*)output, ret_size);
-        free(output);
+        memmgr_free(output);
         return ret;
     }
 #else
@@ -119,7 +119,7 @@ PyObject* WebPEncode_wrapper(PyObject* self, PyObject* args)
 
     WebPMuxAssemble(mux, &output_data);
     WebPMuxDelete(mux);
-    free(output);
+    memmgr_free(output);
 
     ret_size = output_data.size;
     if (ret_size > 0) {

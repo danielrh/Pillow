@@ -30,8 +30,8 @@ void
 ImagingHistogramDelete(ImagingHistogram h)
 {
     if (h->histogram)
-	free(h->histogram);
-    free(h);
+	memmgr_free(h->histogram);
+    memmgr_free(h);
 }
 
 ImagingHistogram
@@ -40,10 +40,10 @@ ImagingHistogramNew(Imaging im)
     ImagingHistogram h;
 
     /* Create histogram descriptor */
-    h = calloc(1, sizeof(struct ImagingHistogramInstance));
+    h = memmgr_calloc(1, sizeof(struct ImagingHistogramInstance));
     strncpy(h->mode, im->mode, IMAGING_MODE_LENGTH);
     h->bands = im->bands;
-    h->histogram = calloc(im->pixelsize, 256 * sizeof(long));
+    h->histogram = memmgr_calloc(im->pixelsize, 256 * sizeof(long));
 
     return h;
 }

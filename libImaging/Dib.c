@@ -70,15 +70,15 @@ ImagingNewDIB(const char *mode, int xsize, int ysize)
         return (ImagingDIB) ImagingError_ModeError();
 
     /* Create DIB context and info header */
-    /* malloc check ok, small constant allocation */
-    dib = (ImagingDIB) malloc(sizeof(*dib));
+    /* memmgr_alloc check ok, small constant allocation */
+    dib = (ImagingDIB) memmgr_alloc(sizeof(*dib));
     if (!dib)
         return (ImagingDIB) ImagingError_MemoryError();
-    /* malloc check ok, small constant allocation */
-    dib->info = (BITMAPINFO*) malloc(sizeof(BITMAPINFOHEADER) +
+    /* memmgr_alloc check ok, small constant allocation */
+    dib->info = (BITMAPINFO*) memmgr_alloc(sizeof(BITMAPINFOHEADER) +
                                      256 * sizeof(RGBQUAD));
     if (!dib->info) {
-        free(dib);
+        memmgr_free(dib);
         return (ImagingDIB) ImagingError_MemoryError();
     }
 
@@ -93,16 +93,16 @@ ImagingNewDIB(const char *mode, int xsize, int ysize)
     /* Create DIB */
     dib->dc = CreateCompatibleDC(NULL);
     if (!dib->dc) {
-        free(dib->info);
-        free(dib);
+        memmgr_free(dib->info);
+        memmgr_free(dib);
         return (ImagingDIB) ImagingError_MemoryError();
     }
 
     dib->bitmap = CreateDIBSection(dib->dc, dib->info, DIB_RGB_COLORS,
                                    &dib->bits, NULL, 0);
     if (!dib->bitmap) {
-        free(dib->info);
-        free(dib);
+        memmgr_free(dib->info);
+        memmgr_free(dib);
         return (ImagingDIB) ImagingError_MemoryError();
     }
 
@@ -294,7 +294,7 @@ ImagingDeleteDIB(ImagingDIB dib)
     }
     if (dib->dc)
         DeleteDC(dib->dc);
-    free(dib->info);
+    memmgr_free(dib->info);
 }
 
 #endif /* _WIN32 */

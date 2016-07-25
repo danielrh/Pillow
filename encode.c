@@ -67,7 +67,7 @@ PyImaging_EncoderNew(int contextsize)
 
     /* Allocate encoder context */
     if (contextsize > 0) {
-        context = (void*) calloc(1, contextsize);
+        context = (void*) memmgr_calloc(1, contextsize);
         if (!context) {
             Py_DECREF(encoder);
             (void) PyErr_NoMemory();
@@ -95,8 +95,8 @@ _dealloc(ImagingEncoderObject* encoder)
 {
     if (encoder->cleanup)
         encoder->cleanup(&encoder->state);
-    free(encoder->state.buffer);
-    free(encoder->state.context);
+    memmgr_free(encoder->state.buffer);
+    memmgr_free(encoder->state.context);
     Py_XDECREF(encoder->lock);
     Py_XDECREF(encoder->state.fd);
     PyObject_Del(encoder);
@@ -183,8 +183,8 @@ _encode_to_file(ImagingEncoderObject* encoder, PyObject* args)
         return NULL;
 
     /* Allocate an encoder buffer */
-    /* malloc check ok, either constant int, or checked by PyArg_ParseTuple */
-    buf = (UINT8*) malloc(bufsize);
+    /* memmgr_alloc check ok, either constant int, or checked by PyArg_ParseTuple */
+    buf = (UINT8*) memmgr_alloc(bufsize);
     if (!buf)
         return PyErr_NoMemory();
 
@@ -200,7 +200,7 @@ _encode_to_file(ImagingEncoderObject* encoder, PyObject* args)
         if (status > 0)
             if (write(fh, buf, status) < 0) {
                 ImagingSectionLeave(&cookie);
-                free(buf);
+                memmgr_free(buf);
                 return PyErr_SetFromErrno(PyExc_IOError);
             }
 
@@ -208,7 +208,7 @@ _encode_to_file(ImagingEncoderObject* encoder, PyObject* args)
 
     ImagingSectionLeave(&cookie);
 
-    free(buf);
+    memmgr_free(buf);
 
     return Py_BuildValue("i", encoder->state.errcode);
 }
@@ -262,8 +262,8 @@ _setimage(ImagingEncoderObject* encoder, PyObject* args)
             return PyErr_NoMemory();
         }
         state->bytes = (state->bits * state->xsize+7)/8;
-        /* malloc check ok, overflow checked above */
-        state->buffer = (UINT8*) malloc(state->bytes);
+        /* memmgr_alloc check ok, overflow checked above */
+        state->buffer = (UINT8*) memmgr_alloc(state->bytes);
         if (!state->buffer)
             return PyErr_NoMemory();
     }
@@ -542,8 +542,8 @@ PyImaging_ZipEncoderNew(PyObject* self, PyObject* args)
 
     /* Copy to avoid referencing Python's memory */
     if (dictionary && dictionary_size > 0) {
-        /* malloc check ok, size comes from PyArg_ParseTuple */
-        char* p = malloc(dictionary_size);
+        /* memmgr_alloc check ok, size comes from PyArg_ParseTuple */
+        char* p = memmgr_alloc(dictionary_size);
         if (!p)
             return PyErr_NoMemory();
         memcpy(p, dictionary, dictionary_size);
@@ -621,8 +621,8 @@ static unsigned int* get_qtables_arrays(PyObject* qtables, int* qtablesLen) {
         Py_DECREF(tables);
         return NULL;
     }
-    /* malloc check ok, num_tables <4, DCTSIZE2 == 64 from jpeglib.h */
-    qarrays = (unsigned int*) malloc(num_tables * DCTSIZE2 * sizeof(unsigned int));
+    /* memmgr_alloc check ok, num_tables <4, DCTSIZE2 == 64 from jpeglib.h */
+    qarrays = (unsigned int*) memmgr_alloc(num_tables * DCTSIZE2 * sizeof(unsigned int));
     if (!qarrays) {
         Py_DECREF(tables);
         PyErr_NoMemory();
@@ -650,7 +650,7 @@ static unsigned int* get_qtables_arrays(PyObject* qtables, int* qtablesLen) {
 JPEG_QTABLES_ERR:
     Py_DECREF(tables);  // Run on both error and not error
     if (PyErr_Occurred()) {
-        free(qarrays);
+        memmgr_free(qarrays);
         qarrays = NULL;
         return NULL;
     }
@@ -698,8 +698,8 @@ PyImaging_JpegEncoderNew(PyObject* self, PyObject* args)
     qarrays = get_qtables_arrays(qtables, &qtablesLen);
 
     if (extra && extra_size > 0) {
-        /* malloc check ok, length is from python parsearg */
-        char* p = malloc(extra_size); // Freed in JpegEncode, Case 5
+        /* memmgr_alloc check ok, length is from python parsearg */
+        char* p = memmgr_alloc(extra_size); // Freed in JpegEncode, Case 5
         if (!p)
             return PyErr_NoMemory();
         memcpy(p, extra, extra_size);
@@ -708,8 +708,8 @@ PyImaging_JpegEncoderNew(PyObject* self, PyObject* args)
         extra = NULL;
 
     if (rawExif && rawExifLen > 0) {
-        /* malloc check ok, length is from python parsearg */
-        char* pp = malloc(rawExifLen); // Freed in JpegEncode, Case 5
+        /* memmgr_alloc check ok, length is from python parsearg */
+        char* pp = memmgr_alloc(rawExifLen); // Freed in JpegEncode, Case 5
         if (!pp)
             return PyErr_NoMemory();
         memcpy(pp, rawExif, rawExifLen);
@@ -831,8 +831,8 @@ PyImaging_LibTiffEncoderNew(PyObject* self, PyObject* args)
             if (len) {
                 if (PyInt_Check(PyTuple_GetItem(value,0))) {
                     TRACE((" %d elements, setting as ints \n", (int)len));
-                    /* malloc check ok, calloc checks for overflow */
-                    intav = calloc(len, sizeof(int));
+                    /* memmgr_alloc check ok, memmgr_calloc checks for overflow */
+                    intav = memmgr_calloc(len, sizeof(int));
                     if (intav) {
                         for (i=0;i<len;i++) {
                             intav[i] = (int)PyInt_AsLong(PyTuple_GetItem(value,i));
@@ -840,12 +840,12 @@ PyImaging_LibTiffEncoderNew(PyObject* self, PyObject* args)
                         status = ImagingLibTiffSetField(&encoder->state,
                                                         (ttag_t) PyInt_AsLong(key),
                                                         len, intav);
-                        free(intav);
+                        memmgr_free(intav);
                     }
                 } else if (PyFloat_Check(PyTuple_GetItem(value,0))) {
                     TRACE((" %d elements, setting as floats \n", (int)len));
-                    /* malloc check ok, calloc checks for overflow */
-                    floatav = calloc(len, sizeof(float));
+                    /* memmgr_alloc check ok, memmgr_calloc checks for overflow */
+                    floatav = memmgr_calloc(len, sizeof(float));
                     if (floatav) {
                         for (i=0;i<len;i++) {
                             floatav[i] = (float)PyFloat_AsDouble(PyTuple_GetItem(value,i));
@@ -853,7 +853,7 @@ PyImaging_LibTiffEncoderNew(PyObject* self, PyObject* args)
                         status = ImagingLibTiffSetField(&encoder->state,
                                                         (ttag_t) PyInt_AsLong(key),
                                                         len, floatav);
-                        free(floatav);
+                        memmgr_free(floatav);
                     }
                 } else {
                     TRACE(("Unhandled type in tuple for key %d : %s \n",

@@ -61,7 +61,7 @@ alloc_array(Py_ssize_t count)
         PyErr_NoMemory();
         return NULL;
     }
-    xy = malloc(2 * count * sizeof(double) + 1);
+    xy = memmgr_alloc(2 * count * sizeof(double) + 1);
     if (!xy)
         PyErr_NoMemory();
     return xy;
@@ -97,7 +97,7 @@ path_new(Py_ssize_t count, double* xy, int duplicate)
 static void
 path_dealloc(PyPathObject* path)
 {
-    free(path->xy);
+    memmgr_free(path->xy);
     PyObject_Del(path);
 }
 
@@ -173,7 +173,7 @@ PyPath_Flatten(PyObject* data, double **pxy)
                 xy[j++] = x;
                 xy[j++] = y;
             } else {
-                free(xy);
+                memmgr_free(xy);
                 return -1;
             }
         }
@@ -191,7 +191,7 @@ PyPath_Flatten(PyObject* data, double **pxy)
                 xy[j++] = x;
                 xy[j++] = y;
             } else {
-                free(xy);
+                memmgr_free(xy);
                 return -1;
             }
         }
@@ -206,7 +206,7 @@ PyPath_Flatten(PyObject* data, double **pxy)
                     PyErr_Clear();
                     break;
                 } else {
-                    free(xy);
+                    memmgr_free(xy);
                     return -1;
                 }
             }
@@ -221,7 +221,7 @@ PyPath_Flatten(PyObject* data, double **pxy)
                 xy[j++] = y;
             } else {
                 Py_DECREF(op);
-                free(xy);
+                memmgr_free(xy);
                 return -1;
             }
             Py_DECREF(op);
@@ -230,7 +230,7 @@ PyPath_Flatten(PyObject* data, double **pxy)
 
     if (j & 1) {
         PyErr_SetString(PyExc_ValueError, "wrong number of coordinates");
-        free(xy);
+        memmgr_free(xy);
         return -1;
     }
 
@@ -306,8 +306,8 @@ path_compact(PyPathObject* self, PyObject* args)
     self->count = j;
 
     /* shrink coordinate array */
-    /* malloc check ok, self->count is smaller than it was before */
-    self->xy = realloc(self->xy, 2 * self->count * sizeof(double));
+    /* memmgr_alloc check ok, self->count is smaller than it was before */
+    self->xy = memmgr_realloc(self->xy, 2 * self->count * sizeof(double));
 
     return Py_BuildValue("i", i); /* number of removed vertices */
 }

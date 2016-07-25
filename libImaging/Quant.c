@@ -7,7 +7,7 @@
  * history:
  * 1998-09-10 tjs  Contributed
  * 1998-12-29 fl   Added to PIL 1.0b1
- * 2004-02-21 fl   Fixed bogus free() on quantization error
+ * 2004-02-21 fl   Fixed bogus memmgr_free() on quantization error
  * 2005-02-07 fl   Limit number of colors to 256
  *
  * Written by Toby J Sargeant <tjs@longford.cs.monash.edu.au>.
@@ -155,8 +155,8 @@ create_pixel_hash(Pixel *pixelData,uint32_t nPixels)
    uint32_t timer,timer2,timer3;
 #endif
 
-   /* malloc check ok, small constant allocation */
-   d=malloc(sizeof(PixelHashData));
+   /* memmgr_alloc check ok, small constant allocation */
+   d=memmgr_alloc(sizeof(PixelHashData));
    if (!d) return NULL;
    hash=hashtable_new(pixel_hash,pixel_cmp);
    hashtable_set_user_data(hash,d);
@@ -197,8 +197,8 @@ static void
 destroy_pixel_hash(HashTable *hash)
 {
    PixelHashData *d=(PixelHashData *)hashtable_get_user_data(hash);
-   if (d) free(d);
-   hashtable_free(hash);
+   if (d) memmgr_free(d);
+   hashtable_memmgr_free(hash);
 }
 
 
@@ -240,8 +240,8 @@ hash_to_list(const HashTable *h, const Pixel pixel, const uint32_t count, void *
 
    PIXEL_SCALE(&pixel,&q,d->scale);
 
-   /* malloc check ok, small constant allocation */
-   p=malloc(sizeof(PixelList));
+   /* memmgr_alloc check ok, small constant allocation */
+   p=memmgr_alloc(sizeof(PixelList));
    if (!p) return;
 
    p->flag=0;
@@ -564,9 +564,9 @@ split(BoxNode *node)
       exit(1);
    }
 #endif
-   /* malloc check ok, small constant allocation */
-   left=malloc(sizeof(BoxNode));
-   right=malloc(sizeof(BoxNode));
+   /* memmgr_alloc check ok, small constant allocation */
+   left=memmgr_alloc(sizeof(BoxNode));
+   right=memmgr_alloc(sizeof(BoxNode));
    if (!left||!right) {
       return 0;
    }
@@ -621,8 +621,8 @@ median_cut(PixelList *hl[3],
    BoxNode *thisNode;
 
    h=ImagingQuantHeapNew(box_heap_cmp);
-   /* malloc check ok, small constant allocation */
-   root=malloc(sizeof(BoxNode));
+   /* memmgr_alloc check ok, small constant allocation */
+   root=memmgr_alloc(sizeof(BoxNode));
    if (!root) { ImagingQuantHeapFree(h); return NULL; }
    for(i=0;i<3;i++) {
       for (tl[i]=hl[i];tl[i]&&tl[i]->next[i];tl[i]=tl[i]->next[i]);
@@ -656,16 +656,16 @@ done:
 }
 
 static void
-free_box_tree(BoxNode *n)
+memmgr_free_box_tree(BoxNode *n)
 {
    PixelList *p,*pp;
-   if (n->l) free_box_tree(n->l);
-   if (n->r) free_box_tree(n->r);
+   if (n->l) memmgr_free_box_tree(n->l);
+   if (n->r) memmgr_free_box_tree(n->r);
    for (p=n->head[0];p;p=pp) {
       pp=p->next[0];
-      free(p);
+      memmgr_free(p);
    }
-   free(n);
+   memmgr_free(n);
 }
 
 #ifdef TEST_SPLIT_INTEGRITY
@@ -828,7 +828,7 @@ map_image_pixels(Pixel *pixelData,
       }
       pixelArray[i]=bestmatch;
    }
-   hashtable_free(h2);
+   hashtable_memmgr_free(h2);
    return 1;
 }
 
@@ -888,7 +888,7 @@ map_image_pixels_from_quantized_pixels(
          pixelArray[i]=bestmatch;
       }
    }
-   hashtable_free(h2);
+   hashtable_memmgr_free(h2);
    return changes;
 }
 
@@ -944,7 +944,7 @@ map_image_pixels_from_median_box(
       pixelArray[i]=bestmatch;
       hashtable_insert(h2,pixelData[i],bestmatch);
    }
-   hashtable_free(h2);
+   hashtable_memmgr_free(h2);
    return 1;
 }
 
@@ -963,20 +963,20 @@ compute_palette_from_median_cut(
    uint32_t *count;
 
    *palette=NULL;
-   /* malloc check ok, using calloc */
-   if (!(count=calloc(nPaletteEntries, sizeof(uint32_t)))) {
+   /* memmgr_alloc check ok, using memmgr_calloc */
+   if (!(count=memmgr_calloc(nPaletteEntries, sizeof(uint32_t)))) {
       return 0;
    }
    for(i=0;i<3;i++) {
       avg[i]=NULL;
    }
    for(i=0;i<3;i++) {
-      /* malloc check ok, using calloc */
-      if (!(avg[i]=calloc(nPaletteEntries, sizeof(uint32_t)))) {
+      /* memmgr_alloc check ok, using memmgr_calloc */
+      if (!(avg[i]=memmgr_calloc(nPaletteEntries, sizeof(uint32_t)))) {
          for(i=0;i<3;i++) {
-            if (avg[i]) free (avg[i]);
+            if (avg[i]) memmgr_free (avg[i]);
          }
-         free(count);
+         memmgr_free(count);
          return 0;
       }
    }
@@ -985,8 +985,8 @@ compute_palette_from_median_cut(
       if (!(i%100)) { printf ("%05d\r",i); fflush(stdout); }
       if (checkContained(root,pixelData+i)>1) {
          printf ("pixel in two boxes\n");
-         for(i=0;i<3;i++) free (avg[i]);
-         free(count);
+         for(i=0;i<3;i++) memmgr_free (avg[i]);
+         memmgr_free(count);
          return 0;
       }
 #endif
@@ -994,16 +994,16 @@ compute_palette_from_median_cut(
 #ifndef NO_OUTPUT
          printf ("pixel lookup failed\n");
 #endif
-         for(i=0;i<3;i++) free (avg[i]);
-         free(count);
+         for(i=0;i<3;i++) memmgr_free (avg[i]);
+         memmgr_free(count);
          return 0;
       }
       if (paletteEntry>=nPaletteEntries) {
 #ifndef NO_OUTPUT
          printf ("panic - paletteEntry>=nPaletteEntries (%d>=%d)\n",(int)paletteEntry,(int)nPaletteEntries);
 #endif
-         for(i=0;i<3;i++) free (avg[i]);
-         free(count);
+         for(i=0;i<3;i++) memmgr_free (avg[i]);
+         memmgr_free(count);
          return 0;
       }
       avg[0][paletteEntry]+=pixelData[i].c.r;
@@ -1011,11 +1011,11 @@ compute_palette_from_median_cut(
       avg[2][paletteEntry]+=pixelData[i].c.b;
       count[paletteEntry]++;
    }
-   /* malloc check ok, using calloc */
-   p=calloc(nPaletteEntries, sizeof(Pixel));
+   /* memmgr_alloc check ok, using memmgr_calloc */
+   p=memmgr_calloc(nPaletteEntries, sizeof(Pixel));
    if (!p) {
-      for(i=0;i<3;i++) free (avg[i]);
-      free(count);
+      for(i=0;i<3;i++) memmgr_free (avg[i]);
+      memmgr_free(count);
       return 0;
    }
    for (i=0;i<nPaletteEntries;i++) {
@@ -1024,8 +1024,8 @@ compute_palette_from_median_cut(
       p[i].c.b=(int)(.5+(double)avg[2][i]/(double)count[i]);
    }
    *palette=p;
-   for(i=0;i<3;i++) free (avg[i]);
-   free(count);
+   for(i=0;i<3;i++) memmgr_free (avg[i]);
+   memmgr_free(count);
    return 1;
 }
 
@@ -1101,16 +1101,16 @@ k_means(Pixel *pixelData,
    if (nPaletteEntries > UINT32_MAX / (sizeof(uint32_t))) {
        return 0;
    }
-   /* malloc check ok, using calloc */
-   if (!(count=calloc(nPaletteEntries, sizeof(uint32_t)))) {
+   /* memmgr_alloc check ok, using memmgr_calloc */
+   if (!(count=memmgr_calloc(nPaletteEntries, sizeof(uint32_t)))) {
       return 0;
    }
    for(i=0;i<3;i++) {
       avg[i]=NULL;
    }
    for(i=0;i<3;i++) {
-      /* malloc check ok, using calloc */
-      if (!(avg[i]=calloc(nPaletteEntries, sizeof(uint32_t)))) {
+      /* memmgr_alloc check ok, using memmgr_calloc */
+      if (!(avg[i]=memmgr_calloc(nPaletteEntries, sizeof(uint32_t)))) {
          goto error_1;
       }
    }
@@ -1119,12 +1119,12 @@ k_means(Pixel *pixelData,
    if (nPaletteEntries > UINT32_MAX / nPaletteEntries) {
        goto error_1;
    }
-   /* malloc check ok, using calloc, checking n*n above */
-   avgDist=calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t));
+   /* memmgr_alloc check ok, using memmgr_calloc, checking n*n above */
+   avgDist=memmgr_calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t));
    if (!avgDist) { goto error_1; }
 
-   /* malloc check ok, using calloc, checking n*n above */
-   avgDistSortKey=calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t *));
+   /* memmgr_alloc check ok, using memmgr_calloc, checking n*n above */
+   avgDistSortKey=memmgr_calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t *));
    if (!avgDistSortKey) { goto error_2; }
 
 #ifndef NO_OUTPUT
@@ -1159,19 +1159,19 @@ k_means(Pixel *pixelData,
 #ifndef NO_OUTPUT
    printf("]\n");
 #endif
-   if (avgDistSortKey) free(avgDistSortKey);
-   if (avgDist) free(avgDist);
-   for(i=0;i<3;i++) if (avg[i]) free (avg[i]);
-   if (count) free(count);
+   if (avgDistSortKey) memmgr_free(avgDistSortKey);
+   if (avgDist) memmgr_free(avgDist);
+   for(i=0;i<3;i++) if (avg[i]) memmgr_free (avg[i]);
+   if (count) memmgr_free(count);
    return 1;
 
 error_3:
-   if (avgDistSortKey) free(avgDistSortKey);
+   if (avgDistSortKey) memmgr_free(avgDistSortKey);
 error_2:
-   if (avgDist) free(avgDist);
+   if (avgDist) memmgr_free(avgDist);
 error_1:
-   for(i=0;i<3;i++) if (avg[i]) free (avg[i]);
-   if (count) free(count);
+   for(i=0;i<3;i++) if (avg[i]) memmgr_free (avg[i]);
+   if (count) memmgr_free(count);
    return 0;
 }
 
@@ -1268,22 +1268,22 @@ quantize(Pixel *pixelData,
    printf ("done (%f)\n",(clock()-timer)/(double)CLOCKS_PER_SEC);
 #endif
 
-   free_box_tree(root);
+   memmgr_free_box_tree(root);
    root=NULL;
 
-   /* malloc check ok, using calloc for overflow */
-   qp=calloc(nPixels, sizeof(uint32_t));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow */
+   qp=memmgr_calloc(nPixels, sizeof(uint32_t));
    if (!qp) { goto error_4; }
 
    if (nPaletteEntries > UINT32_MAX / nPaletteEntries )  {
        goto error_5;
    }
-   /* malloc check ok, using calloc for overflow, check of n*n above */
-   avgDist=calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow, check of n*n above */
+   avgDist=memmgr_calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t));
    if (!avgDist) { goto error_5; }
 
-   /* malloc check ok, using calloc for overflow, check of n*n above */
-   avgDistSortKey=calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t *));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow, check of n*n above */
+   avgDistSortKey=memmgr_calloc(nPaletteEntries*nPaletteEntries, sizeof(uint32_t *));
    if (!avgDistSortKey) { goto error_6; }
 
    if (!build_distance_tables(avgDist,avgDistSortKey,p,nPaletteEntries)) {
@@ -1337,7 +1337,7 @@ quantize(Pixel *pixelData,
                    );
          }
       }
-      hashtable_free(h2);
+      hashtable_memmgr_free(h2);
    }
 #endif
 #ifndef NO_OUTPUT
@@ -1355,8 +1355,8 @@ quantize(Pixel *pixelData,
 #ifndef NO_OUTPUT
    printf ("cleanup..."); fflush(stdout); timer=clock();
 #endif
-   if (avgDist) free(avgDist);
-   if (avgDistSortKey) free(avgDistSortKey);
+   if (avgDist) memmgr_free(avgDist);
+   if (avgDistSortKey) memmgr_free(avgDistSortKey);
    destroy_pixel_hash(h);
 #ifndef NO_OUTPUT
    printf ("done (%f)\n",(clock()-timer)/(double)CLOCKS_PER_SEC);
@@ -1365,15 +1365,15 @@ quantize(Pixel *pixelData,
    return 1;
 
 error_7:
-   if (avgDistSortKey) free(avgDistSortKey);
+   if (avgDistSortKey) memmgr_free(avgDistSortKey);
 error_6:
-   if (avgDist) free(avgDist);
+   if (avgDist) memmgr_free(avgDist);
 error_5:
-   if (qp) free(qp);
+   if (qp) memmgr_free(qp);
 error_4:
-   if (p) free(p);
+   if (p) memmgr_free(p);
 error_3:
-   if (root) free_box_tree(root);
+   if (root) memmgr_free_box_tree(root);
 error_1:
    destroy_pixel_hash(h);
 error_0:
@@ -1426,8 +1426,8 @@ quantize2(Pixel *pixelData,
    uint32_t *avgDist;
    uint32_t **avgDistSortKey;
    
-   /* malloc check ok, using calloc */
-   p=calloc(nQuantPixels, sizeof(Pixel));
+   /* memmgr_alloc check ok, using memmgr_calloc */
+   p=memmgr_calloc(nQuantPixels, sizeof(Pixel));
    if (!p) return 0;
    mean[0]=mean[1]=mean[2]=0;
    h=hashtable_new(unshifted_pixel_hash,unshifted_pixel_cmp);
@@ -1447,22 +1447,22 @@ quantize2(Pixel *pixelData,
       p[i].v=data.furthest.v;
       data.new.v=data.furthest.v;
    }
-   hashtable_free(h);
+   hashtable_memmgr_free(h);
 
-   /* malloc check ok, using calloc */
-   qp=calloc(nPixels, sizeof(uint32_t));
+   /* memmgr_alloc check ok, using memmgr_calloc */
+   qp=memmgr_calloc(nPixels, sizeof(uint32_t));
    if (!qp) { goto error_1; }
 
    if (nQuantPixels > UINT32_MAX / nQuantPixels ) {
        goto error_2;
    }
 
-   /* malloc check ok, using calloc for overflow, check of n*n above */
-   avgDist=calloc(nQuantPixels*nQuantPixels, sizeof(uint32_t));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow, check of n*n above */
+   avgDist=memmgr_calloc(nQuantPixels*nQuantPixels, sizeof(uint32_t));
    if (!avgDist) { goto error_2; }
 
-   /* malloc check ok, using calloc for overflow, check of n*n above */
-   avgDistSortKey=calloc(nQuantPixels*nQuantPixels, sizeof(uint32_t *));
+   /* memmgr_alloc check ok, using memmgr_calloc for overflow, check of n*n above */
+   avgDistSortKey=memmgr_calloc(nQuantPixels*nQuantPixels, sizeof(uint32_t *));
    if (!avgDistSortKey) { goto error_3; }
 
    if (!build_distance_tables(avgDist,avgDistSortKey,p,nQuantPixels)) {
@@ -1477,18 +1477,18 @@ quantize2(Pixel *pixelData,
    *paletteLength=nQuantPixels;
    *palette=p;
    *quantizedPixels=qp;
-   free(avgDistSortKey);
-   free(avgDist);
+   memmgr_free(avgDistSortKey);
+   memmgr_free(avgDist);
    return 1;
 
 error_4:
-   free(avgDistSortKey);
+   memmgr_free(avgDistSortKey);
 error_3:
-   free(avgDist);
+   memmgr_free(avgDist);
 error_2:
-   free(qp);
+   memmgr_free(qp);
 error_1:
-   free(p);
+   memmgr_free(p);
    return 0;
 }
 
@@ -1525,8 +1525,8 @@ ImagingQuantize(Imaging im, int colors, int mode, int kmeans)
     if (im->xsize > INT_MAX / im->ysize) {
         return ImagingError_MemoryError();
     }
-    /* malloc check ok, using calloc for final overflow, x*y above */
-    p = calloc(im->xsize * im->ysize, sizeof(Pixel));
+    /* memmgr_alloc check ok, using memmgr_calloc for final overflow, x*y above */
+    p = memmgr_calloc(im->xsize * im->ysize, sizeof(Pixel));
     if (!p)
         return ImagingError_MemoryError();
 
@@ -1569,7 +1569,7 @@ ImagingQuantize(Imaging im, int colors, int mode, int kmeans)
                 p[i].v = im->image32[y][x];
 
     } else {
-        free(p);
+        memmgr_free(p);
         return (Imaging) ImagingError_ValueError("internal error");
     }
 
@@ -1638,7 +1638,7 @@ ImagingQuantize(Imaging im, int colors, int mode, int kmeans)
         break;
     }
 
-    free(p);
+    memmgr_free(p);
     ImagingSectionLeave(&cookie);
 
     if (result > 0) {
@@ -1649,7 +1649,7 @@ ImagingQuantize(Imaging im, int colors, int mode, int kmeans)
             for (x=0; x < im->xsize; x++)
                 imOut->image8[y][x] = (unsigned char) newData[i++];
 
-        free(newData);
+        memmgr_free(newData);
 
         pp = imOut->palette->palette;
 
@@ -1674,7 +1674,7 @@ ImagingQuantize(Imaging im, int colors, int mode, int kmeans)
             strcpy(imOut->palette->mode, "RGBA");
         }
 
-        free(palette);
+        memmgr_free(palette);
         ImagingSectionLeave(&cookie);
 
         return imOut;

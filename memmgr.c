@@ -6,8 +6,16 @@
 // This code is in the public domain.
 //----------------------------------------------------------------
 #include <stdio.h>
-#include "memmgr.h"
+
 #include <emmintrin.h>
+#include <string.h>
+#include "memmgr.h"
+#undef malloc
+#undef free
+#undef realloc
+#undef calloc
+
+
 #ifdef _WIN32
 #define WINALIGN32 __declspec(align(32))
 #define UNIXALIGN32
@@ -30,13 +38,13 @@ union mem_header_union
 
         // Size of the block (in quantas of sizeof(mem_header_t))
         //
-        ulong size; 
+        size_t size; 
     } s;
 
     // Used to align headers in memory to a boundary
     //
     struct Align align_dummy;
-    byte pool_slice[sizeof(struct Align)];
+    unsigned char pool_slice[sizeof(struct Align)];
 };
 
 typedef union mem_header_union mem_header_t;
@@ -52,16 +60,37 @@ static mem_header_t* freep = 0;
 // Static pool for new allocations
 //
 static WINALIGN32 union mem_header_union aligned_pool[POOL_SIZE/sizeof(union mem_header_union)] UNIXALIGN32;
-static byte *pool = &aligned_pool[0].pool_slice[0];
-static ulong pool_free_pos = 0;
+static unsigned char *pool = (unsigned char*)&aligned_pool[0];
+static size_t pool_free_pos = 0;
 
 
-void memmgr_init()
+void memmgr_init(void)
 {
     base.s.next = 0;
     base.s.size = 0;
     freep = 0;
     pool_free_pos = 0;
+}
+void * memmgr_calloc(size_t a, size_t size) {
+    void * retval = memmgr_alloc(a * size);
+    memset(retval, 0, a * size);
+    return retval;
+}
+
+void* memmgr_realloc(void *old, size_t size) {
+    if (old == NULL) {
+        return malloc(size);
+    }
+    void *retval = malloc(size);
+    mem_header_t *block = ((mem_header_t*) old) - 1;
+    size_t old_size = block->s.size * sizeof(mem_header_t);
+    memcpy(retval, old, old_size < size ? old_size : size);
+    free(old);
+    return retval;
+}
+/*
+void* realloc(void *old, size_t size) {
+    return memmgr_realloc(old, size);
 }
 int posix_memalign(void ** retval, size_t alignment, size_t size) {
     if (alignment > 32) {
@@ -83,10 +112,11 @@ void * malloc(size_t size) {
     return retval;
 }
 void * calloc(size_t a, size_t size) {
-    return memset(memmgr_alloc(a * size), 0, a * size);
+    return memmgr_calloc(a, size);
 }
 
 void free(void * d) {
+    return;
     if (!d) {
         return;
     }
@@ -96,17 +126,8 @@ void free(void * d) {
     }
     return memmgr_free(d);
 }
-void* realloc(void *old, size_t size) {
-    if (old == NULL) {
-        return malloc(size);
-    }
-    void *retval = malloc(size);
-    mem_header_t *block = ((mem_header_t*) old) - 1;
-    memcpy(retval, old, block->s.size * sizeof(mem_header_t));
-    free(old);
-    return retval;
-}
-void memmgr_print_stats()
+*/
+void memmgr_print_stats(void)
 {
     #ifdef DEBUG_MEMMGR_SUPPORT_STATS
     mem_header_t* p;
@@ -152,9 +173,9 @@ void memmgr_print_stats()
 }
 
 
-static mem_header_t* get_mem_from_pool(ulong nquantas)
+static mem_header_t* get_mem_from_pool(size_t nquantas)
 {
-    ulong total_req_size;
+    size_t total_req_size;
 
     mem_header_t* h;
 
@@ -187,7 +208,7 @@ static mem_header_t* get_mem_from_pool(ulong nquantas)
 // The pointer returned to the user points to the free space within the block,
 // which begins one quanta after the header.
 //
-void* memmgr_alloc(ulong nbytes)
+void* memmgr_alloc(size_t nbytes)
 {
     mem_header_t* p;
     mem_header_t* prevp;
@@ -196,13 +217,14 @@ void* memmgr_alloc(ulong nbytes)
     // the requested bytes, plus the header. The -1 and +1 are there to make sure
     // that if nbytes is a multiple of nquantas, we don't allocate too much
     //
-    ulong nquantas = (nbytes + sizeof(mem_header_t) - 1) / sizeof(mem_header_t) + 1;
+    size_t nquantas = (nbytes + sizeof(mem_header_t) - 1) / sizeof(mem_header_t) + 1;
 
     // First alloc call, and no free list yet ? Use 'base' for an initial
     // denegerate block of size 0, which points to itself
     // 
     if ((prevp = freep) == 0)
     {
+        memmgr_init();
         base.s.next = freep = prevp = &base;
         base.s.size = 0;
     }
